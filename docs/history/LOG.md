@@ -11,6 +11,14 @@ Moved verbatim from `NOW.md` (closeout fold, to keep NOW.md inside the audit's l
 
 From "Where it is right now":
 
+- Rulings D1 to D7 are all pending, and full-time's `docs/12-roadmap.md` records no release decision (`rulings.json`, `state/FULLTIME-NOW.md`). (2026-11-12)
+
+## 2026-11-14
+
+Moved verbatim from `NOW.md` (closeout fold, to keep NOW.md inside the audit's limits).
+
+From "Where it is right now":
+
 - The credits share is read and guarded (`engine/credits.py`) but nothing spends it: the engine is held. The daily credits task in docs/CREDITS-SESSION.md exists on claude.ai and is switched off while held (since 2026-11-14); it is switched back on at release, never recreated. (2026-11-14)
 
 ## 2026-11-14
