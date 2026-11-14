@@ -57,7 +57,8 @@ def main():
         if path.suffix == '.md':
             for target in re.findall(r'\]\(([^\s)]+)\)', path.read_text(encoding='utf-8')):
                 target = target.split('#', 1)[0]
-                if not target or re.match(r'^[a-z]+://', target) or target.startswith('mailto:'):
+                # Any URI scheme (https://, mailto:, or a placeholder such as the protocol's asset:1) is not a file path.
+                if not target or re.match(r'^[a-z][a-z0-9+.-]*:', target):
                     continue
                 target = unquote(target.strip('<>'))
                 if not (path.parent / target).exists():
