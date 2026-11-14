@@ -2,7 +2,7 @@
 repo: krishanraja/growth-fulltime
 product: Full Time growth engine
 as_of: 2026-11-14
-head: 89dcd42
+head: caf522e
 lifecycle: building
 production_url: none
 state_doc: README.md
@@ -28,6 +28,7 @@ Football fans who become Full Time's returning listeners. It proves Mindmake can
 
 Lifecycle: building, and held. Krish held the engine on 29 October 2026 (Ruling, Krish, 2026-10-29: Not ready means a held activation state): Control Center's registry says held and so does the tracked `activation.json`. Control Center has not woken it since. On 14 November a hand-started run of the loop proved the held path live: Control Center accepted it as `held`, at 1.20.0, with no proposals and one NOT_READY hold, carrying the engine's priorities, obsessions and next steps. No workspace run has ever reached Control Center: its 13 reports are 12 dispatches from 19 to 29 October and that run. So Control Center shows this file's "Where it is right now" and "What is next" as the engine's state of play.
 
+- our own pull requests (Krish or the Actions bot, branch in this repository, ready, at the commit that passed) now merge themselves when every "check" run on that commit is green (.github/workflows/auto-merge.yml, rule .github/scripts/auto-merge-pick.jq, tested). Forks, drafts and strangers wait for a person. (2026-11-14)
 - docs/control-center/ is Control Center's protocol bundle 1.33.0, byte for byte (bundle_sha256 4b7175a8aebbb8979eaefbeea1b7f0f44f2cffa0bbba9cea341da784fe7fde4d), the last protocol version of 14 November. (2026-11-14)
 - docs/control-center/ is Control Center's protocol bundle 1.28.0, byte for byte (bundle_sha256 b0dfa0d7aaa10aea0de45fb5f7dcc241c62bef70766f0fed9c6351d69af1b791), with bundle.json and a hash test that fails an edit in place (integration plan I-11). (2026-11-14)
 - The fleet audit's repairs landed. The docs say the daily credits task exists and is switched off while held. NOW.md and MEASUREMENT.md name the one weekly aggregate full-time must export for the North Star to be measured. GET-GOING.md has a release checklist (re-copy the protocol, read `ai_answers_detail` first, switch the credits task back on). A hand-started run proved the held report live in Control Center: `held`, 1.20.0, no proposals, one NOT_READY hold. (2026-11-14)
@@ -35,7 +36,6 @@ Lifecycle: building, and held. Krish held the engine on 29 October 2026 (Ruling,
 - The protocol copy in docs/control-center/ is Control Center's at 212379e1 (1.21.0, the schemas unchanged): its voice_check row lists the 16 channels Control Center accepts, and it says a number objective's target comes from the repository's north-star block; Control Center reads no number objective for this engine (only Legibility, Mindmake, Heartside and Make Your Mind Up have one), so its registered objectives keep their registry targets. The code still speaks 1.20.0 and the engine is still held. (2026-11-12)
 - The docs match the code and the live state, the engine's obsessions quote only Krish's own words, a repeated ack with a new line now updates Control Center (protocol 1.21.0), and closeout notes fold into NOW.md on every merge to main (engine/closeout.py). (2026-11-12)
 - The code speaks Control Center protocol 1.20.0: a run reads Krish's instruction, acks it by id and reports its priorities, obsessions and next steps (`engine/engine_state.py`). The state reached Control Center first in the held run of 14 November; Krish has given this engine no instruction. (2026-11-14)
-- The promotion rail is on HOLD: the four matches on fulltime.fm each have one AI Pundit of six, the newest from 19 October (`state/FULLTIME-NOW.md`, read hourly). A push needs a match with four. (2026-11-12)
 
 ## What changed recently
 
@@ -58,7 +58,7 @@ Lifecycle: building, and held. Krish held the engine on 29 October 2026 (Ruling,
 
 ## What is next and what is waiting on Krish
 
-- Next (2026-11-14): refresh the copy the same way at the next protocol version; each run already says protocol_copy: current | behind <version> | unknown.
+- Next (2026-11-14): watch the first pull request after this one merge itself on green.
 - Waiting on Krish (2026-11-12): the release decision and D1, each recorded in full-time's decision log, and a full listen to Liverpool v8 (HANDOVER-2026-10-27-CREATIVES.md).
 - North Star check (2026-11-14): holds.
 

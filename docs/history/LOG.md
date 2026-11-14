@@ -11,6 +11,14 @@ Moved verbatim from `NOW.md` (closeout fold, to keep NOW.md inside the audit's l
 
 From "Where it is right now":
 
+- The promotion rail is on HOLD: the four matches on fulltime.fm each have one AI Pundit of six, the newest from 19 October (`state/FULLTIME-NOW.md`, read hourly). A push needs a match with four. (2026-11-12)
+
+## 2026-11-14
+
+Moved verbatim from `NOW.md` (closeout fold, to keep NOW.md inside the audit's limits).
+
+From "Where it is right now":
+
 - Rulings D1 to D7 are all pending, and full-time's `docs/12-roadmap.md` records no release decision (`rulings.json`, `state/FULLTIME-NOW.md`). (2026-11-12)
 
 ## 2026-11-14
