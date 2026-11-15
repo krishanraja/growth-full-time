@@ -5,6 +5,21 @@ Newest first. Record his words with the date, then change the job file and
 words, and in `rulings.json` with the full-time decision-log heading that
 records it.
 
+- 2026-11-15: engine v2 lands on main, keeping main's Control Center report.
+  Ruling (Krish, 2026-11-15): Full Time v2 lands on main keeping main's Control Center report. His words:
+  "keep main's report". Everything v2 built on 27 October (the signed spec, the matchday pack, Google
+  Analytics through Control Center, the Audience Builder, the social kit lock, the crew of eleven and the
+  27 October rulings) is now on main beside main's report design: held mode, the NOT_READY hold, engine
+  state at 1.20.0, credits, AI answers and the wake suffix. From v2's report logic, the parts that fit
+  main's protocol were folded in: the North Star and Google Analytics readings, Krish's actions (only when
+  not held) and the weekly library reconcile as activity lines, LIBRARY as a hold when not held, Google
+  Analytics rows kept out of the completers objective, the ORGANIC per-take exception and the three pushed
+  platforms in the holds, a refusal of any protocol major other than 1, his amended version checked by
+  amended_sha256, an approved go-live recorded as his instruction, and his answers kept and settled
+  against the queued G1 and G2. The 1.1.0 ask logic (stages, one ask at a time, the D7, D2, D3 order, G1
+  and G2 in the report, the capabilities check) is not in the report; EXECUTION-PLAN.md lists it as
+  follow-ups. The engine stays held, and nothing was sent, posted or spent.
+
 - 2026-11-12: the docs match the engine, and closeout notes fold into NOW.md.
   Krish, 2026-11-12: "Is everything done? Are the project documentations up to date, 100%, every single
   word, with what this engine now is and how it works? Are there any other small bugs that you discovered
@@ -54,6 +69,62 @@ records it.
   gates: the rail at 4 of 6, the release decision, D7, attribution, the
   workspace, and D1, still pending until its full-time decision-log entry
   exists. No ruling status, schedule or wall changed.
+
+- 2026-10-27: the social kit's AI disclosure is enough as it stands. Krish, asked
+  whether take clips also need "synthetic voices" as the old renderer said: "Ai
+  pundit is fine". The kit shows "AI Pundit" on every frame and "Made by AI from
+  checked match facts" on every plate. The kit's spec still has the audio say "an AI
+  Pundit on Full Time" by 2 seconds, and the Voice Lock lint checks it within 5.
+- 2026-10-27: approved the Full Time social kit, "The Switch, revision 1". Krish,
+  shown the rendered kit cold: "I like it. Looks good." Each AI Pundit is a channel
+  in its own paper; the default post is one channel and never claims a disagreement,
+  and the cut and Pundit v Pundit render only when two real shows exist for the
+  match. It lives in `brand/social-kit/`, pinned by `LOCK.json`; a change is a new
+  revision he approves. The approval record, with every frame's SHA-256, is in
+  Drive `Growth Build/05_Brand-Kit`. Posting, Canva uploads and spend each still
+  need their own yes.
+- 2026-10-27: Google Analytics comes from Control Center. Krish: "just get google
+  analytics data from control center, much easier". Read live that day, Control
+  Center has no Analytics read yet, so `briefs/2026-10-27-control-center-measurement.md`
+  asks it to carry the week's landings in the engine's directive (`ga4_landings`); the
+  engine reads that field now. The GitHub keyless route below stays as an unused
+  fallback and is off Krish's list.
+- 2026-10-27: Google Analytics moved off per-session access. Krish: "I need a
+  more robust way of connecting Google Analytics than just in this session. That's
+  so fragile. Can it not go in GitHub or Vercel?" The daily control center loop in
+  GitHub Actions now signs in to Google keylessly (workload identity federation, no
+  key or secret anywhere, accepted only from this repository's main branch) and
+  reads aggregate landings read-only; Vercel was not used, because the engine's
+  scheduled runs live in GitHub. Setup: `docs/GA4-ACCESS.md`, route A, and
+  `scripts/ga4-github-setup.sh`. The per-session secrets step is gone.
+- 2026-10-27: added the Audience Builder and a direct Google Analytics reader.
+  Krish: "there needs to be a social media specialist working relentlessly: not
+  necessarily to publish content, but to make sure that my profile is as visible
+  as possible, with as many followers as possible, through all the different
+  tactics". Profiles: "Full Time brand profiles (Recommended)". Growth work:
+  "Automate within platform rules": official APIs only, each action type ruled by
+  him first, in `engagement-actions.json`, with the risky types banned in code.
+  Google Analytics: "Happy to let you read Google Analytics directly", then
+  "Direct read-only API (Recommended)"; setup in `docs/GA4-ACCESS.md`.
+- 2026-10-27: approved engine v2 and recorded nine rulings.
+  Ruling (Krish, 2026-10-27): "approved, do it all" for [docs/ENGINE-V2.md](docs/ENGINE-V2.md).
+  His decisions that day, in his words where given: going live "Go now, per-take
+  gate (Recommended)" (D1 approved, new ORGANIC entry; in force once full-time's
+  decision log carries the heading); accounts "Reserve all, push three
+  (Recommended)"; publishing "i will do it in Buffer, but not until the voices,
+  scripts and the video/image ad creatives are ready to be replicated easily and
+  reliably"; roles "Claude handles planning, strategy, orchestration, whilst codex
+  handles creative production and social media management"; the 11/10 bar built
+  against the remote-switch ad, take clips, rows and match-morning cards;
+  production on his machine; ready after "3 in a row, no edits"; brand match ads
+  may link to Today; each format goes live on its own readiness; "knowing what
+  works and what doesnt is CRITICAL"; a full Canva brand kit; every asset and
+  strategy in the Drive Growth folder with no sprawl; Google Analytics as part of
+  measurement. The Drive library `Ventures/Full Time/Growth Build` now has its
+  fixed tree, START-HERE and INDEX, and the 27 October creative handoff moved,
+  unrenamed and with its file IDs intact, into `06_Reference/creative-handoff/`.
+  Nothing was posted, sent, scheduled or spent.
+
 - 2026-10-26: connected creative releases to the product-owned personality core.
   Exact committed exports are verified and imported without activation; linked
   character variants receive only their selected core identity plus shared

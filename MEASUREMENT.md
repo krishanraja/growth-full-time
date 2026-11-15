@@ -13,16 +13,21 @@ What the product must provide for this engine to measure the North Star: one wee
 `growth.py metrics FILE` validates a version 1 export with product `fulltime`
 and an observations array. `run --observations FILE` imports it into private
 history. Each observation contains metric, value, source, query_ref,
-window_start, window_end, observed_at and status. Dates are inclusive source
-dates; the operational window is Europe/London. Captures include a timezone.
-An optional note explains limitations without identifying anyone.
+window_start, window_end, observed_at and status. Dates are inclusive London
+days written YYYY-MM-DD. A capture is an RFC 3339 time with its offset, such as
+2026-10-26T07:30:00+00:00, read the same way on every Python from 3.9. It comes
+after the window's last London day ended: a reading taken during that day is not
+a whole window and is refused. An optional note explains limitations without
+identifying anyone.
 
 Statuses are measured, missing and stale. Missing values are null. Measured
 zero means the exact query ran successfully and returned zero. Old samples
 retain their dates and become stale after 48 hours. No matching whole-window
 query means missing. Daily or rolling uniques are never added into a week.
-Duplicate metric/window rows within one export are refused. A subsequent
-capture updates the reading while preserving source history.
+Duplicate metric/window rows within one export are refused; a per-creative
+breakdown row is told apart by its `creative_id`. A subsequent capture updates the
+reading while preserving source history. A reading checks only the rows for its
+own window, so an old row that today's rules refuse never blocks a later window.
 
 For retention measures, include cohort_start, cohort_end and follow_up_through.
 The cohort interval identifies first completions; the observation window and
@@ -88,3 +93,135 @@ Newer results and failed tests remain in history.
 
 The existing release thresholds remain product decisions: this contract does
 not approve them, close consent or declare launch readiness.
+
+## Share attribution and Google Analytics (v2, 2026-10-27)
+
+The Measurement Analyst (`engine/attribution.py`) owns the North Star count. It
+reads aggregates only, under every rule above. Missing, stale and measured zero
+stay different: a count nobody has measured is null with its reason, never zero.
+
+**The North Star: `share_arrived_new_listeners`.** New listeners a week who
+arrived through a fan's shared link or clip (`docs/NORTH_STAR.md`). The mechanism
+is the 7-day first-touch join in `briefs/2026-10-27-share-attribution.md`, and the
+two documents say the same thing:
+
+> A new listener counts as share-arrived when their first touch, stored once on their first visit and never overwritten, carried a valid share token `s` and their first finished show came within 7 days of it; they count in the London week of that first finished show.
+
+A later share link never changes the first touch: someone who first arrived from
+search and opened a fan's link two days later counts as untokenised, not
+share-arrived. A first finished show means actual playback completion, never a
+switch or a load. The product mints the token, stores the first touch and runs the
+join inside its own source; the export carries only the weekly count. Until the
+product builds the token and the join, this objective is reported as missing with
+the reason "no product export yet". A new listener whose first touch carried
+neither a valid token nor a brand post's creative ID never counts, even when they
+are probably word of mouth: the export reports them apart as
+`untokenised_new_listeners`. A new listener whose first touch carried a token or a
+creative ID, but whose first finished show came more than 7 days later, is in none
+of the three counts. Shares made outside Full Time, such as a platform's own clip
+tool, are invisible and are never estimated into the number. `shares_created`
+counts the tokens minted in the window, so share yield (arrivals per share) can be
+read beside the count.
+
+**Brand-post arrivals: `brand_post_new_listeners`.** The same join for a first
+touch that carried a brand post's creative ID in `utm_content` (the tag
+`growth.py link` adds) and no valid share token. It comes from the same product
+export. The total is one row without `creative_id`. The breakdown by creative is
+one more row per creative for the same window, carrying `creative_id`, a creative
+ID the `CREATIVE_ID` pattern in `growth.py` accepts in full; only this metric may
+carry it, the same creative appears once, and a breakdown row is never read as the
+total.
+
+**Google Analytics 4 landings: `ga4_landing_new_users` and `ga4_landing_sessions`.**
+Google Analytics 4 runs on fulltime.fm (measurement ID `G-W2QL8RKFJ1`, page views
+only). Consent item D7 is still open, and reading aggregates does not close it.
+New users and sessions by session source, medium, campaign and manual ad content
+(`utm_content`) are a leading web signal by creative ID: they show which posts sent
+people to the site, not who listened. They are web sessions, never listeners. No
+code path turns a GA4 row into any `*_listeners` metric, and a test proves it. A
+`*_listeners` row whose source or query_ref names Google Analytics in any spelling
+(GA4, GA-4, Google Analytics, the measurement ID, the Data API's runReport, or GA or
+gtag as a word) is refused at import, by `growth.py metrics` and
+`run --observations`, before it reaches history. GA4 numbers never replace
+a listening outcome; the What-Works Analyst may use them only as a leading signal
+beside the listener counts. `(not set)` traffic is reported as untagged and is
+never assigned to a creative. Summing rows is sound here because each new user's
+first session, and each session, has exactly one source, medium, campaign and
+content within the one window.
+
+**Export shapes.** The product export is a version 1 observation export, as above,
+with these four metrics, and the optional per-creative brand-post rows, for the
+seven complete London days ending yesterday
+(`examples/attribution-export.example.json`, synthetic):
+
+```json
+{"schema_version": 1, "product": "fulltime", "observations": [
+  {"metric": "share_arrived_new_listeners", "value": 7, "source": "...", "query_ref": "...",
+   "window_start": "2026-10-19", "window_end": "2026-10-25",
+   "observed_at": "2026-10-26T07:30:00+00:00", "status": "measured"},
+  {"metric": "brand_post_new_listeners", "value": 1, "source": "...", "query_ref": "...",
+   "window_start": "2026-10-19", "window_end": "2026-10-25",
+   "observed_at": "2026-10-26T07:30:00+00:00", "status": "measured",
+   "creative_id": "TT_CLASH_CLIP_C01_H01_V1_20261020"}]}
+```
+
+The GA4 export is written by the read-only reader (`growth.py ga4 report`,
+`engine/ga4.py`) or produced through Control Center
+(`examples/ga4-export.example.json`, synthetic):
+
+```json
+{"product": "fulltime", "source": "ga4", "property": "G-W2QL8RKFJ1", "query_ref": "...",
+ "window_start": "2026-10-19", "window_end": "2026-10-25",
+ "observed_at": "2026-10-26T07:30:00+00:00",
+ "rows": [{"utm_source": "tiktok", "utm_medium": "organic_video",
+           "utm_campaign": "ft_growth_202610", "utm_content": "<creative ID or (not set)>",
+           "new_users": 12, "sessions": 14, "engaged_sessions": 9}]}
+```
+
+A GA4 export carries exactly these fields. Its window is whole London days, given
+as dates, and its last day had ended in London when it was read; the property must
+report in Europe/London for its days to be London days. Counts are whole and
+non-negative, and engaged sessions never exceed sessions. `utm_content` is a
+creative ID, matched in full, or `(not set)`; a file with any other label is
+refused, so an exporter folds other campaign labels (another site's tag, an empty
+label) into `(not set)` first, but never Google's `(other)` row. One campaign tag
+appears once. The property must be Full Time's. Any person-level field (a client
+ID, user ID, IP address, email, device ID or similar) or any contact-like value
+refuses the whole file. A read Google thresholded (hid small counts), or in which
+it folded rows into `(other)`, is not sent at all, as `engine/ga4.py` refuses it:
+sent, it would report hidden creatives as untagged or as zero. The shape has no
+field to carry that limitation, and a file that adds one is refused.
+
+**Objectives.** Control Center receives `share_arrived_new_listeners` and
+`brand_post_new_listeners` for the seven complete London days ending yesterday. A
+measured total row for exactly that week gives the value, with its interval in the
+reason. Otherwise the value is null and the reason says which: no product export
+yet; stale (taken more than 48 hours ago, or marked stale); or window mismatch (an
+export exists, but not for that exact week; other windows are never added into a
+week). Only the listener rows are read. An invalid row for exactly that week
+refuses the reading; an invalid row for another week is left out, so an old row
+never blocks a clean week. Beside the North Star, the reason quotes the week's
+newest untokenised count only when it is measured and no more than 48 hours old;
+otherwise it says missing or stale. The existing `attributed_new_completers`
+objective keeps reporting until Control Center registers the new keys.
+
+**The interval rule.** Weekly counts are treated as Poisson. A measured count is
+reported with a rough 95% interval: the count plus or minus twice its square root,
+the low end floored at zero, both to one decimal (0.5 to 9.5 at 5; 35.0 to 63.0 at
+49). Each arm's exposure (what it had to earn its count, such as its number of
+posts) is recorded beside its count. Two arms are compared with
+z = (a - r * b) / sqrt(r * (a + b)), where r is arm a's exposure over arm b's: the
+conditional test for two Poisson counts, which scales by exposure and is
+z = (a - b) / sqrt(a + b) when exposure is equal. A difference is called only when
+z is 2 or more in size, and z is shown cut toward zero at two places, so a shown z
+never crosses the bar. A result from fewer than 20 events per arm is directional
+only. The learning register (`engine/learning.py`) applies this bar: a claim is
+confirmed only when it was pre-registered, overlaps no other test, ran at least two
+matchweeks, has at least 20 events per arm and z of 2 or more in its favour; it is
+refuted on the same bar with z of 2 or more against it; and it shows no difference
+on the same clean bar when the planned matchweeks have passed with z under 2 in
+size. Anything else is directional. The definition, the pre-registered flag and the
+planned matchweeks are frozen at the first observation, and a test once marked
+overlapping stays so: a later change is refused, because a changed experiment needs
+a new ID. Reading the register recomputes every status, z, interval and reason from
+its evidence and refuses one that does not match.

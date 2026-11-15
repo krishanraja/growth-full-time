@@ -6,8 +6,353 @@ import sys
 
 from .records import History, atomic_json
 
+V2 = ('spec', 'formats', 'pack', 'buffer', 'library', 'session', 'dispatch', 'audience', 'fixtures', 'actions',
+      'invariants')
+
+
+def _json(path):
+    """A JSON file read as UTF-8 (R35), refusing NaN and Infinity."""
+    def refuse(constant):
+        raise ValueError(f'{path}: {constant} is not a number')
+    return json.loads(Path(path).read_text(encoding='utf-8'), parse_constant=refuse)
+
+
+def _add_v2(commands):
+    """Engine v2 verbs: each checks or prepares, offline-first, and none posts, sends or spends."""
+    spec = commands.add_parser('spec', help='check, digest, compile or prepare the weekly campaign spec (G1)')
+    spec.add_argument('operation', choices=['check', 'digest', 'compile', 'propose'])
+    spec.add_argument('file'); spec.add_argument('--expires-at')
+    spec.add_argument('--queue', action='store_true', help='put the G1 ask on the queue for the next loop report')
+    formats = commands.add_parser('formats', help='the format registry and readiness computed from verdicts')
+    formats.add_argument('operation', choices=['list', 'readiness', 'lock'])
+    formats.add_argument('--verdicts'); formats.add_argument('--spec')
+    formats.add_argument('--format'); formats.add_argument('--lock', default='unlocked')
+    pack = commands.add_parser('pack', help='check or prepare one matchday pack (G2)')
+    pack.add_argument('operation', choices=['check', 'propose'])
+    pack.add_argument('file'); pack.add_argument('--offline', action='store_true')
+    pack.add_argument('--expires-at')
+    pack.add_argument('--queue', action='store_true', help='put the G2 ask on the queue for the next loop report')
+    pack.add_argument('--spec', help='the week spec (or local/specs/<week>.signed.json) the items are checked against')
+    pack.add_argument('--context', help='{creative_id: {unit_cost_gbp, unit_minutes, checks}}: measured cost and minutes '
+                      '(a null one never counts toward readiness) and any pre-live check the engine cannot see '
+                      '(the render receipt and the pack check fill the rest)')
+    buffer = commands.add_parser('buffer', help='read-only Buffer receipts for the Full Time allowlist')
+    buffer.add_argument('operation', choices=['query', 'receipts'])
+    buffer.add_argument('--posts'); buffer.add_argument('--pack')
+    buffer.add_argument('--record', action='store_true',
+                        help='keep the receipts and close each approved G2 whose kept items are all posted')
+    fixtures = commands.add_parser('fixtures', help="the Match Clock: this London week's Premier League fixtures")
+    fixtures.add_argument('operation', choices=['fetch', 'import', 'show'])
+    fixtures.add_argument('file', nargs='?', help='import: a football-data.org or API-Football reply saved as JSON')
+    fixtures.add_argument('--date', help='a day in the week to read (YYYY-MM-DD); today in London by default')
+    actions = commands.add_parser('actions', help="Krish's actions today and the engine's own to-do")
+    actions.add_argument('--all', action='store_true', help='every open one-off setup step, not only the first three')
+    invariants = commands.add_parser('invariants', help='check every invariant in invariants/registry.json')
+    invariants.add_argument('operation', choices=['check'])
+    buffer.add_argument('--channels', required=True,
+                        help="Buffer's own channel records (list_channels), so every ID is matched to its service and name")
+    library = commands.add_parser('library', help='the Growth Build library: names, reconcile, bundles')
+    library.add_argument('operation', choices=['name', 'reconcile', 'canva', 'stamp', 'bundle', 'assemble'])
+    library.add_argument('paths', nargs='*'); library.add_argument('--index'); library.add_argument('--out')
+    library.add_argument('--parts'); library.add_argument('--created-on'); library.add_argument('--repo-path')
+    session = commands.add_parser('session', help='the 36 KB pack a fresh session starts from, and the ledger')
+    session.add_argument('operation', choices=['pack', 'minutes'])
+    session.add_argument('--kind'); session.add_argument('--crew', default='')
+    session.add_argument('--spec'); session.add_argument('--check', action='store_true')
+    session.add_argument('--date')
+    session.add_argument('--card', help='build: the task card JSON')
+    session.add_argument('--contact-sheet', help='review: the contact sheet path or link')
+    session.add_argument('--instance', help='production: the instance JSON')
+    session.add_argument('--locks', help='production: the format locks JSON')
+    dispatch = commands.add_parser('dispatch', help='check a task card and print, never run, its Codex command')
+    dispatch.add_argument('card'); dispatch.add_argument('--plugin-root')
+    dispatch.add_argument('--reading')
+    dispatch.add_argument('--propose-spend', type=float, metavar='USD',
+                          help="prepare, never send, Krish's spend ask for this exact card (needs --expires-at)")
+    dispatch.add_argument('--expires-at')
+    audience = commands.add_parser('audience', help='brand-profile visibility: action rulings, the daily plan, followers')
+    audience.add_argument('operation', choices=['actions', 'plan', 'followers'])
+    audience.add_argument('--minutes', type=float, default=10)
+
+
+def _learning_errors(growth, campaign):
+    """A spec may rely only on learnings the register holds, and never on a refuted one."""
+    from . import learning
+    applied = campaign.get('learnings_applied') or [] if isinstance(campaign, dict) else []
+    if not applied:
+        return []
+    register = learning.read(growth.LOCAL)['learnings']
+    out = []
+    for name in applied:
+        if name not in register:
+            out.append(f'spec.learnings_applied: {name} is not in the learning register')
+        elif learning.status(register[name]) == 'refuted':
+            out.append(f'spec.learnings_applied: {name} was refuted; stop relying on it')
+    return out
+
+
+def _rail(growth, offline):
+    """Product Truth at pack time: the live rail unless offline, when the synced copy is
+    used and Today counts as not live, so a match ad fails closed."""
+    state = growth.load_state() or {}
+    if offline:
+        return state, False, 'synced'
+    rail = growth.read_rail()
+    return {**state, 'rail': rail}, any(m.get('pundits') for m in rail), 'live'
+
+
+def _run_v2(args, growth):
+    if args.command == 'spec':
+        from . import spec
+        data = spec.load(args.file)
+        if args.operation == 'check':
+            errors = spec.validate(data)
+            if errors:
+                raise ValueError('the spec is refused: ' + '; '.join(errors))
+            return {'valid': True, 'run_id': data['run_id'], 'payload_sha256': spec.digest(data)}
+        if args.operation == 'digest':
+            errors = spec.validate(data)
+            if errors:
+                raise ValueError('the spec is refused: ' + '; '.join(errors))
+            return {'payload_sha256': spec.digest(data)}
+        if args.operation == 'compile':
+            from . import gates
+            state = growth.load_state() or {}
+            return spec.compile(data, gates.verdicts(growth.LOCAL), state, state.get('brand_identities') or {})
+        if not args.expires_at:
+            raise ValueError('propose needs --expires-at, an ISO date and time with its UTC offset')
+        learned = _learning_errors(growth, data)      # what Krish signs relies only on real learnings
+        if learned:
+            raise ValueError('the spec is refused: ' + '; '.join(learned))
+        proposal = spec.proposal(data, args.expires_at)
+        if args.queue:
+            from . import gates
+            return {'prepared': True, 'sent': False, **gates.prepare(growth.LOCAL, 'g1', proposal)}
+        return {'prepared': True, 'sent': False, 'proposal': proposal}
+    if args.command == 'formats':
+        from . import formats
+        if args.operation == 'lock':
+            if not args.format:
+                raise ValueError('lock needs --format')
+            return {'format_id': args.format, 'lock_version': formats.lock_of(args.format)}
+        if args.operation == 'list':
+            return {key: {'title': r['title'], 'links_to': r['links_to'],
+                          'published_pundits_min': r['published_pundits_min'],
+                          'creative_system_format': r['creative_system_format']}
+                    for key, r in formats.load_registry().items()}
+        if args.verdicts:
+            verdicts = _json(args.verdicts)
+            verdicts = verdicts.get('verdicts') if isinstance(verdicts, dict) else verdicts
+        else:
+            from . import gates
+            verdicts = gates.verdicts(growth.LOCAL)     # Krish's G2 answers, as the loop recorded them
+        if args.spec:
+            from . import spec
+            campaign = spec.load(args.spec)
+            return {item['format_id']: formats.readiness(verdicts, item['format_id'], item['lock_version'])
+                    for item in campaign.get('formats') or []}
+        if not args.format:
+            raise ValueError('readiness needs --format or --spec')
+        return formats.readiness(verdicts, args.format, args.lock)
+    if args.command == 'pack':
+        from . import buffer_read, gates, pack, spec
+        data = _json(args.file)
+        campaign, signed = None, False
+        if args.spec:
+            campaign = spec.load(args.spec)
+            if isinstance(campaign, dict) and 'signed_at' in campaign and 'spec' in campaign:
+                campaign, signed = campaign['spec'], True       # local/specs/<week>.signed.json, from G1
+        state, today_live, source = _rail(growth, args.offline)
+        allowlist = buffer_read.load_allowlist(growth.LOCAL)
+        earlier = [g['proposal'] for _, g in gates._gates(growth.LOCAL) if g['kind'] == 'g2']
+        errors = pack.check(data, state, allowlist, today_live, campaign=campaign, earlier=earlier)
+        if errors:
+            raise ValueError(f'the matchday pack is refused (rail {source}): ' + '; '.join(errors))
+        if args.operation == 'check':
+            return {'ok': True, 'items': len(data['items']), 'rail': source, 'today_live': today_live,
+                    'spec': 'signed' if signed else ('unsigned' if campaign else 'none')}
+        if not args.expires_at:
+            raise ValueError('propose needs --expires-at, an ISO date and time with its UTC offset')
+        mode = campaign['mode'] if campaign else 'proof'
+        if mode == 'live':
+            if not signed:
+                raise ValueError('a live matchday ask needs the signed spec (local/specs/<week>.signed.json)')
+            spec.compile(campaign, gates.verdicts(growth.LOCAL), state, state.get('brand_identities') or {})
+        proposal = pack.proposal(data, args.expires_at, mode=mode)
+        if not args.queue:
+            return {'prepared': True, 'sent': False, 'mode': mode, 'proposal': proposal}
+        if campaign is None:
+            raise ValueError('queueing a G2 needs --spec, the week spec its items are checked against')
+        given = _json(args.context) if args.context else {}
+        ran = gates.PACK_CHECKS['always'] + (gates.PACK_CHECKS['live_rail'] if source == 'live' else ())
+        context = {}
+        for item in data['items']:
+            mine = given.get(item['creative_id']) or {}
+            checks = dict(mine.get('checks') or {})
+            checks.update({name: True for name in ran})
+            from .assets import render_checks       # what the item's own render receipt proves
+            checks.update(render_checks(growth.LOCAL, item['creative_id'], item.get('media')))
+            if item.get('whole_match') is True and source == 'live':
+                checks['whole_match_four_of_six'] = True       # pack.check held it to four of six on the live rail
+            elif item.get('whole_match') is False:
+                # A per-take item makes no whole-match claim (pack.check refuses words that do),
+                # so the 4-of-6 rule has nothing to hold it to.
+                checks['whole_match_four_of_six'] = True
+            context[item['creative_id']] = {'unit_cost_gbp': mine.get('unit_cost_gbp'),
+                                            'unit_minutes': mine.get('unit_minutes'), 'checks': checks}
+        return {'prepared': True, 'sent': False, 'mode': mode,
+                **gates.prepare(growth.LOCAL, 'g2', proposal, context, checked=pack.checked(data) is not None)}
+    if args.command == 'buffer':
+        from . import buffer_read
+        allowlist = buffer_read.load_allowlist(growth.LOCAL)
+        records = _json(args.channels)
+        if args.operation == 'query':
+            return {'list_posts': buffer_read.query(allowlist, records)}
+        if not args.posts or not args.pack:
+            raise ValueError('receipts needs --posts (what list_posts returned) and --pack')
+        posts = _json(args.posts)
+        posts = posts.get('posts') if isinstance(posts, dict) else posts
+        found = buffer_read.receipts(posts, _json(args.pack), allowlist, records)
+        if args.record:
+            from . import gates
+            return {'receipts': found, 'recorded': gates.record_receipts(growth.LOCAL, found)}
+        return {'receipts': found}
+    if args.command == 'fixtures':
+        import datetime as dt
+        from . import fixtures, reporting
+        day = dt.date.fromisoformat(args.date) if args.date else reporting.london_today()
+        if args.operation == 'fetch':
+            return fixtures.fetch(growth.LOCAL, day)
+        if args.operation == 'import':
+            if not args.file:
+                raise ValueError('import needs the saved reply file')
+            return fixtures.save(growth.LOCAL, _json(args.file), day)
+        return fixtures.latest(growth.LOCAL) or {'fixtures': None, 'why': 'not read yet: growth.py fixtures fetch or import'}
+    if args.command == 'actions':
+        from . import actions, reporting
+        state = growth.load_state() or {}
+        result = actions.compute(growth.LOCAL, reporting.london_today(), state, growth.load_rulings(),
+                                 setup_shown=None if args.all else actions.SETUP_SHOWN)
+        return '\n'.join(actions.lines(result))
+    if args.command == 'invariants':
+        from . import invariants
+        result = invariants.check()
+        if not result.get('ok'):
+            raise ValueError('invariants failed: ' + json.dumps(result, allow_nan=False)[:2000])
+        return result
+    if args.command == 'session':
+        from . import session, spec
+        if args.operation == 'minutes':
+            if not args.date:
+                raise ValueError('minutes needs --date YYYY-MM-DD')
+            ledger = Path(growth.LOCAL) / 'engine' / 'sessions.jsonl'
+            return {'date': args.date, 'krish_minutes': session.krish_minutes_on(ledger, args.date),
+                    'over_budget': session.budget_errors(ledger, args.date)}
+        if not args.kind:
+            raise ValueError('pack needs --kind')
+        crew = [name for name in args.crew.split(',') if name]
+        campaign = spec.load(args.spec) if args.spec else None
+        signed = None
+        if isinstance(campaign, dict) and 'signed_at' in campaign and 'spec' in campaign:
+            from . import reporting                   # local/specs/<week>.signed.json, written from G1's Clear
+            campaign = campaign['spec']
+            signed = reporting.canonical_sha256(campaign)
+        text = session.pack(args.kind, Path(growth.HERE) / 'crew', crew, spec=campaign, signed_sha256=signed,
+                            card=_json(args.card) if args.card else None, contact_sheet=args.contact_sheet,
+                            instance=_json(args.instance) if args.instance else None,
+                            locks=_json(args.locks) if args.locks else None)
+        size = len(text.encode('utf-8'))
+        return {'kind': args.kind, 'bytes': size, 'limit': session.PACK_LIMIT} if args.check else text
+    if args.command == 'dispatch':
+        import datetime as dt
+        from . import dispatch
+        card = _json(args.card)
+        errors = dispatch.validate_card(card)
+        if errors:
+            raise ValueError('the card is refused: ' + '; '.join(errors))
+        if args.propose_spend is not None:
+            if not args.expires_at:
+                raise ValueError('--propose-spend needs --expires-at, an RFC 3339 date and time with its offset')
+            return {'prepared': True, 'sent': False,
+                    'proposal': dispatch.spend_proposal(card, args.propose_spend, args.expires_at)}
+        if not args.plugin_root:
+            raise ValueError('dispatch needs --plugin-root, the Codex plugin folder')
+        reading = _json(args.reading) if args.reading else None
+        now = dt.datetime.now(dt.timezone.utc).isoformat(timespec='seconds')
+        approval = None
+        try:
+            dispatch.guard(card, reading, now)
+        except ValueError:
+            # Only Krish's approval of this exact card, as the loop recorded it, lets it through.
+            approval = dispatch.recorded_approval(growth.LOCAL, card)
+            dispatch.guard(card, reading, now, approval)
+        prompt = Path(growth.LOCAL) / 'dispatch' / (card['card_id'] + '.md')
+        prompt.parent.mkdir(parents=True, exist_ok=True)
+        prompt.write_text(f'# Task card {card["card_id"]}\n\nDo exactly what this card says, inside its write_allow, '
+                          'and nothing on its never list. Finish with the return shape it names.\n\n```json\n'
+                          + json.dumps(card, indent=2, ensure_ascii=False) + '\n```\n', encoding='utf-8')
+        return {'run_this': dispatch.command(card, args.plugin_root, prompt), 'prompt_file': str(prompt),
+                'spend_approval': {key: approval.get(key) for key in ('proposal_id', 'amount_usd', 'sha256')}
+                if approval else None,
+                'note': 'Printed, not run. Claude reruns the acceptance commands and checks the diff afterwards.'}
+    if args.command == 'audience':
+        from . import audience
+        if args.operation == 'actions':
+            registry = audience.load_actions()
+            return {key: {'status': row['status'], 'platforms': row['platforms']}
+                    for key, row in registry['actions'].items()}
+        folder = Path(growth.LOCAL) / 'audience'
+
+        def mine(name):
+            path = folder / name
+            return _json(path) if path.exists() else []
+        if args.operation == 'followers':
+            return audience.followers_check(mine('readings.json'))
+        from . import buffer_read
+        try:
+            allowlist = buffer_read.load_allowlist(growth.LOCAL)
+        except ValueError:
+            allowlist = None            # no allowlist: nothing is automated, every item is Krish's
+        return audience.daily_plan(mine('profiles.json') or {}, mine('performance.json'), mine('trends.json'),
+                                   budget_minutes=args.minutes, allowlist=allowlist)
+    from . import library
+    if args.operation == 'name':
+        return {path: library.name_errors(path) for path in args.paths}
+    if args.operation == 'reconcile':
+        document = _json(args.paths[0]) if len(args.paths) == 1 else None
+        rows = (library.read_index(Path(args.index).read_text(encoding='utf-8')) if args.index
+                else document.get('index') if isinstance(document, dict) else None)
+        if document is None or rows is None:
+            raise ValueError('reconcile needs one listing file and --index INDEX.csv (or a listing that holds its index)')
+        listing = document.get('listing') if isinstance(document, dict) else document
+        result = library.reconcile(listing, rows)
+        return {**result, 'hold': library.hold(result)}
+    if args.operation == 'canva':
+        if len(args.paths) != 1:
+            raise ValueError('canva needs one listing file of the Canva Growth folder')
+        listing = _json(args.paths[0])
+        result = library.canva_reconcile(listing.get('listing') if isinstance(listing, dict) else listing)
+        return {**result, 'hold': library.hold(result, place='The Canva Growth folder')}
+    if args.operation == 'stamp':
+        if len(args.paths) != 1:
+            raise ValueError('stamp needs one Drive copy, saved as text')
+        return {'errors': library.stamp_errors(Path(args.paths[0]).read_text(encoding='utf-8'), args.repo_path)}
+    if args.operation == 'bundle':
+        if not args.paths or not args.out or not args.created_on:
+            raise ValueError('bundle needs files, --out and --created-on YYYY-MM-DD')
+        return {'manifest': library.bundle(args.paths, args.out, created_on=args.created_on)}
+    if len(args.paths) != 1 or not args.parts or not args.out:
+        raise ValueError('assemble needs one manifest, --parts DIR and --out DIR')
+    return library.assemble(_json(args.paths[0]), args.parts, args.out)
+
 
 def main(argv, growth):
+    if argv[:1] == ['ga4']:
+        from .ga4 import main as ga4
+        code = ga4(argv[1:], growth)
+        if code:
+            raise SystemExit(code)
+        return
     parser = argparse.ArgumentParser(prog='growth.py')
     commands = parser.add_subparsers(dest='command', required=True)
     run = commands.add_parser('run')
@@ -37,6 +382,7 @@ def main(argv, growth):
     cc.add_argument('--state', choices=['started', 'done', 'blocked'], help='cc ack: what was done with the instruction')
     cc.add_argument('--line', help='cc ack: one plain line in your own words, never his')
     cc.add_argument('--evidence-url', help='cc ack: an https URL, optional')
+    _add_v2(commands)
     args = parser.parse_args(argv)
     if args.command == 'cc' and args.target == 'ack' and not (args.state and args.line):
         parser.error('cc ack needs --state and --line')
@@ -48,6 +394,10 @@ def main(argv, growth):
             print(json.dumps(summary, indent=2, allow_nan=False))
             if code:
                 raise SystemExit(code)
+            return
+        if args.command in V2:
+            result = _run_v2(args, growth)
+            print(result if isinstance(result, str) else json.dumps(result, indent=2, allow_nan=False))
             return
         if args.command == 'run':
             if args.require_existing_history and not journal.path.exists():
@@ -72,13 +422,13 @@ def main(argv, growth):
             if args.operation != 'list' and not args.file:
                 raise ValueError('an experiment definition or result file is required')
             if args.operation == 'add':
-                journal.experiment(json.loads(Path(args.file).read_text()))
+                journal.experiment(_json(args.file))
             if args.operation == 'result':
-                journal.result(args.id, json.loads(Path(args.file).read_text()))
+                journal.result(args.id, _json(args.file))
             result = journal.read()['experiments']
         elif args.command == 'metrics':
             from .measurements import validate_export
-            rows = validate_export(json.loads(Path(args.file).read_text()))
+            rows = validate_export(_json(args.file))
             result = {'valid': True, 'observations': len(rows), 'imported': False}
         elif args.command == 'assets':
             from .assets import fetch, render

@@ -1,4 +1,4 @@
-> **Status, 2026-11-12: adopted, and held since 2026-10-29.** `python3 growth.py cc` runs the protocol loop at the end of both workspace tasks and on every `cc-growth-directive` dispatch (`.github/workflows/control-center.yml`); see README, "The Control Center loop". The dispatch ran live from 19 to 29 October; Control Center has not woken the engine since Krish held it. A hand-started run on 2026-11-14 proved the held report live (`held`, 1.20.0, one NOT_READY hold, no proposals). No workspace run has reached Control Center.
+> **Status, 2026-11-12: adopted, and held since 2026-10-29.** `python3 growth.py cc` runs the protocol loop at the end of both workspace tasks and on every `cc-growth-directive` dispatch (`.github/workflows/control-center.yml`); see README, "The Control Center loop". The first live run on 2026-10-19 succeeded, and the dispatch ran live from 2026-10-19 to 2026-10-29; Control Center has not woken the engine since Krish held it. A hand-started run on 2026-11-14 proved the held report live (`held`, 1.20.0, one NOT_READY hold, no proposals). No workspace run has reached Control Center.
 
 # Control Center brief: growth-fulltime
 

@@ -22,10 +22,12 @@ ENGINE_ID = 'growth-fulltime'
 PRODUCT_SLUG = 'full-time'
 SLUG = 'fulltime'
 REPO_URL = 'https://github.com/krishanraja/growth-fulltime'
-HOLD_ORDER = ['NOT_READY', 'RAIL', 'RELEASE', 'CHANNEL', 'CONSENT', 'DATA', 'ASSETS', 'APPROVAL',
+HOLD_ORDER = ['NOT_READY', 'LIBRARY', 'RAIL', 'RELEASE', 'CHANNEL', 'CONSENT', 'DATA', 'ASSETS', 'APPROVAL',
               'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7']
 POSTABLE = policy.BRAND_CHANNELS | {'whatsapp'}
+GA4_COMPLETERS = 'A Google Analytics row is web landings, never people who finished a show; it is not counted.'
 ENGINE_STATE_VERSION = '1.20.0'
+GO_LIVE_WALLS = ('send', 'post', 'spend')
 
 
 def envelope(pack, receipt):
@@ -92,8 +94,14 @@ def seal(report):
 # A strict reading of the report schema: every property not named is refused,
 # at every depth, because Control Center refuses unknown fields.
 # ---------------------------------------------------------------------------
+def version_numbers(version):
+    """(major, minor) of a protocol version such as '1.1.0', or None when it is not one."""
+    match = re.fullmatch(r'(\d+)\.(\d+)\.(\d+)', version) if isinstance(version, str) else None
+    return (int(match.group(1)), int(match.group(2))) if match else None
+
+
 def load_schema():
-    return json.loads(SCHEMA_PATH.read_text())
+    return json.loads(SCHEMA_PATH.read_text(encoding='utf-8'))
 
 
 def _is_datetime(value):
@@ -186,6 +194,15 @@ def _objective(key, unit, value, availability, reason, window):
             'timezone': 'Europe/London', 'availability': availability, 'reason': reason}
 
 
+def _from_ga4(row):
+    """True when a row's source or query reference names Google Analytics: measurements'
+    own test where it has one, and GA4 or Google Analytics in any case always."""
+    from . import measurements
+    text = re.sub(r'[^a-z0-9]', '', f'{row.get("source", "")} {row.get("query_ref", "")}'.lower())
+    check = getattr(measurements, 'from_ga4', None)
+    return 'ga4' in text or 'googleanalytics' in text or bool(check and check(row))
+
+
 def objectives(today, rows=None, runs=None, workspace=True):
     """The two registered objectives. Unknown is null with a reason, never zero."""
     window = week_window(today)
@@ -196,9 +213,18 @@ def objectives(today, rows=None, runs=None, workspace=True):
         return [_objective('attributed_new_completers', 'people', None, 'missing', why, window),
                 _objective('marketing_cash_gbp', 'GBP', None, 'missing', why, window)]
     from .measurements import scorecard
-    card = scorecard(rows or [], start, end)
+    rows = list(rows or [])
+    # A Google Analytics row is landings on fulltime.fm, never completers (rulings 8 and 15 of 27 October),
+    # so it never enters this count, whatever its label; the product's own row still counts.
+    landings = [r for r in rows if isinstance(r, dict) and r.get('metric') == 'attributed_new_completers'
+                and _from_ga4(r)]
+    card = scorecard([r for r in rows if not any(r is x for x in landings)], start, end, as_of=utc_now())
     completers = card['attributed_new_completers']
-    if completers['status'] == 'measured':
+    in_window = any((r.get('window_start'), r.get('window_end')) == (start, end) and 'creative_id' not in r
+                    for r in landings)
+    if completers['status'] == 'missing' and in_window:
+        first = _objective('attributed_new_completers', 'people', None, 'missing', GA4_COMPLETERS, window)
+    elif completers['status'] == 'measured':
         first = _objective('attributed_new_completers', 'people', completers['value'], 'measured', None, window)
     elif completers['status'] == 'stale':
         first = _objective('attributed_new_completers', 'people', completers['value'], 'stale',
@@ -229,9 +255,10 @@ def objectives(today, rows=None, runs=None, workspace=True):
 
 def _proposal(proposal_id, title, why, kind, wall, payload, close_event, reference,
               objective_key='attributed_new_completers', channel=None, exact_payload=None,
-              evidence=None, expires_at=None):
+              evidence=None, expires_at=None, amount_usd=None):
+    """One proposal. amount_usd is set only by a spend (engine/dispatch.py, the queued G1 and G2 gates)."""
     return {'proposal_id': proposal_id, 'title': title[:160], 'why': why[:1000], 'kind': kind, 'wall': wall,
-            'amount_usd': None, 'channel': channel, 'objective_key': objective_key,
+            'amount_usd': amount_usd, 'channel': channel, 'objective_key': objective_key,
             'exact_payload': exact_payload, 'payload_sha256': canonical_sha256(payload),
             'evidence': evidence or [], 'close_condition': {'event': close_event, 'reference': reference},
             'expires_at': expires_at}
@@ -300,12 +327,14 @@ def gate_holds(state, rulings_file, identity_known):
     out = []
     if not gate.get('open'):
         out.append(('RAIL', gate.get('why') or 'the rail was not read'))
-    if not policy.release_open(state):
-        out.append(('RELEASE', 'No product release decision is recorded in full-time docs/12-roadmap.md.'))
+    if policy.release_needed(state):
+        out.append(('RELEASE', 'No product release decision is recorded in full-time docs/12-roadmap.md, and the '
+                               'ORGANIC per-take exception is not in force there yet.'))
     if identity_known is None:
         out.append(('CHANNEL', 'Brand identity proof is kept in the private workspace; this runner cannot confirm it.'))
     elif not identity_known:
-        out.append(('CHANNEL', 'No verified Full Time brand identity for YouTube within thirty days.'))
+        out.append(('CHANNEL', 'No verified Full Time brand identity on TikTok, Instagram or YouTube within '
+                               'thirty days.'))
     if not ((state.get('rulings') or {}).get('D7') or {}).get('in_force'):
         out.append(('CONSENT', 'D7, the analytics consent item, is not in force.'))
     for rid, ruling in sorted(rulings_file.items()):
@@ -350,8 +379,9 @@ def not_ready_parts(state, objectives_list, identity_known):
     if not gate.get('open'):
         parts.append(f'Rail: {gate.get("why") or "the rail was not read"}; it needs a match with 4 of 6 '
                      'published AI Pundits.')
-    if not policy.release_open(state):
-        parts.append('Release: no product release decision is recorded in full-time docs/12-roadmap.md.')
+    if policy.release_needed(state):
+        parts.append('Release: no product release decision is recorded in full-time docs/12-roadmap.md, and the '
+                     'ORGANIC per-take exception is not in force there yet.')
     if not (rulings.get('D7') or {}).get('in_force'):
         parts.append('D7: the analytics consent ruling is not in force.')
     attribution = next((o for o in objectives_list if o.get('key') == 'attributed_new_completers'), None)
@@ -361,10 +391,11 @@ def not_ready_parts(state, objectives_list, identity_known):
         parts.append('Workspace: private history and brand identity proof live only in the persistent '
                      'workspace, which this run cannot see.')
     elif not identity_known:
-        parts.append('Workspace: no verified Full Time brand identity for YouTube within thirty days.')
+        parts.append('Workspace: no verified Full Time brand identity on TikTok, Instagram or YouTube within '
+                     'thirty days.')
     if not (rulings.get('D1') or {}).get('in_force'):
-        parts.append('D1 stays pending in rulings.json until its full-time decision-log entry exists; '
-                     'a yes on his list is not that entry.')
+        parts.append('D1 is not in force until its full-time decision-log entry exists (rulings.json records '
+                     'his 27 October yes); a yes on his list is not that entry.')
     return parts
 
 
@@ -412,10 +443,11 @@ def held_build(run_id, mode, observed_at, state, objectives_list, activity, even
 
 def build(run_id, mode, observed_at, state, items, rulings_file, objectives_list, activity,
           held_items=(), events=(), identity_known=None, kill_list=(), degraded=(), max_actions=3,
-          credits_spent=(), engine_state=None):
+          credits_spent=(), engine_state=None, extra_holds=()):
     """The whole protocol report, sealed. `degraded` names sources that were missing. `credits_spent`
     (engine/credits.py Guard) raises the report to 1.16.0 only when this run spent something;
-    `engine_state` (1.20.0, engine/engine_state.py) raises it to 1.20.0 only when the directive asked."""
+    `engine_state` (1.20.0, engine/engine_state.py) raises it to 1.20.0 only when the directive asked.
+    `extra_holds` are (code, detail) pairs such as the weekly LIBRARY reconcile (engine/control_center.py)."""
     state = state or {}
     proposals, release_done = [], False
     for item in [x for x in items if not holds(x)][:max(0, min(3, max_actions))]:
@@ -432,6 +464,7 @@ def build(run_id, mode, observed_at, state, items, rulings_file, objectives_list
     proposals += [kill_proposal(line) for line in kill_list]
     entries = gate_holds(state, rulings_file, identity_known)
     entries += [('DATA', reason) for reason in degraded]
+    entries += list(extra_holds)
     hold_list = merge_holds(entries, list(held_items) + [x for x in items if holds(x)])
     status = 'degraded' if degraded else ('held' if hold_list else 'ready')
     source = {'revision': str(state.get('sha') or 'unknown')[:128],
