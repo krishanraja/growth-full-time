@@ -4,8 +4,9 @@ Full Time's growth engine: enforce the owner's channel limits, read live
 product truth, keep creative and experiment history, reuse approved media and
 report honestly to Control Center through its growth engine protocol.
 
-No personal social accounts, cold outbound email, paid acquisition or paid
-media generation. All implementation belongs here. Full-time and Control
+No personal social accounts, cold outbound email or paid media generation.
+Paid ads are not banned (Krish, 2026-11-15): a paid test waits on ruling D5 and
+his approval of the exact spend. All implementation belongs here. Full-time and Control
 Center changes are handoff briefs. Nothing here sends or publishes marketing.
 
 ## Start here
@@ -86,6 +87,21 @@ fulltime, with an identities object keyed by identity_ref. Each record needs
 platform, account_scope brand, verified true, an actual HTTPS channel source_url
 and a timezone-aware verified_at within thirty days. Missing or stale proof
 keeps CHANNEL held. This registry does not approve release or consent.
+
+Two checks adopted from the Claude Ads review ([docs/CLAUDE-ADS.md](docs/CLAUDE-ADS.md)):
+
+```bash
+python3 growth.py links audit --pack local/pack.json      # read-only: tags reach the landing page, and the share card
+python3 growth.py learning plan --rate-b 24.5 --lift 1.5 --max-matchweeks 10
+python3 growth.py learning cost --spend-gbp 40 --events 12
+```
+
+`links audit` fetches only https pages on fulltime.fm, runs no scripts (so no
+analytics event fires), never follows a redirect elsewhere and never prints a share
+token; a page it cannot read is unknown, never a pass, and any fail exits 1.
+`learning plan` says how many matchweeks a two-arm test needs to meet the What-Works
+bar at assumed rates; `learning cost` gives cost per counted event with the count's
+interval. Both are planning, never evidence, and write nothing.
 
 ## Reuse approved media
 
@@ -220,7 +236,7 @@ The report maps the engine's own outputs:
 | `fulltime:YYYY-MM-DD:<kind>` (daily, report, dispatch; a dispatch adds `:gh<run>.<attempt>`) | `run_id` |
 | Ready actions, at most three | `proposals[]`, wall `none`; a creative that passed every gate is wall `post` with `exact_payload` and `channel` |
 | Held drafts and closed gates | `holds[]`, one per code (NOT_READY, LIBRARY, RAIL, RELEASE, CHANNEL, CONSENT, DATA, D1 to D7). While `activation.json` or Control Center holds the engine, NOT_READY is the only hold and there are no proposals. LIBRARY is the weekly Growth Build reconcile |
-| The release decision and pending rulings (D1 and ORGANIC are approved; RELEASE is the product's own) | wall `strategy` proposals. D4, D5 and D6 unlock only channels the owner excluded, so they are holds, not asks |
+| The release decision and pending rulings (D1 and ORGANIC are approved; RELEASE is the product's own) | wall `strategy` proposals, D5 (the paid test) among them since 15 November. D4 and D6 unlock only channels the owner excluded, so they are holds, not asks |
 | Krish's actions today, the North Star readings and Google Analytics landings | `activity[]` lines, never objectives (Krish's actions only while the engine is not held) |
 | The weekly kill list | wall `strategy` proposals |
 | Human-confirmed publication receipts | `events[]` `creative_published` with the permalink |

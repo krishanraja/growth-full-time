@@ -48,6 +48,31 @@ class PolicyTests(unittest.TestCase):
                 errors = growth.check_pack(pack({'platform': platform, 'text': 'An AI Pundit draft.', 'needs': 'D1'}), state())
                 self.assertTrue(any('excluded' in x for x in errors))
 
+    def test_a_paid_test_is_gated_never_refused(self):
+        """Ruling (Krish, 2026-11-15): "Full Time does not ban paid ads." It waits on D5 (which needs
+        D7), RELEASE, the whole-match rail and CONSENT, from a brand account; it is never excluded."""
+        self.assertNotIn('ads', policy.EXCLUDED)
+        draft = {'platform': 'ads', 'text': 'An AI Pundit draft.', 'creative_id': 'AD_CLASH_CLIP_C01_H01_V1_20261115'}
+        errors = growth.check_pack(pack(draft), state())
+        self.assertFalse(any('excluded' in x for x in errors))
+        for gate in ('brand account', 'RELEASE', 'RAIL', 'CONSENT', 'D5'):
+            with self.subTest(gate=gate):
+                self.assertTrue(any(gate in x for x in errors))
+        held = {**draft, 'account_scope': 'brand', 'holds': ['RELEASE', 'RAIL', 'CONSENT'], 'needs': 'D5'}
+        self.assertEqual(growth.check_pack(pack(held), state()), [])
+
+    def test_a_paid_test_needs_its_own_match_at_four_of_six_on_a_fresh_rail(self):
+        rail = [{'drop': 'd1', 'fill': 4, 'pundits': ['zen', 'gaffer', 'romantic', 'doomer']},
+                {'drop': 'd2', 'fill': 1, 'pundits': ['zen']}]
+        fresh = {**state(), 'rail': rail}
+        ad = {'platform': 'ads', 'account_scope': 'brand', 'drop_id': 'd2', 'pundits': ['zen'],
+              'holds': ['RELEASE', 'CONSENT'], 'text': 'An AI Pundit take.'}
+        self.assertTrue(any('RAIL' in e for e in policy.errors(ad, fresh)))
+        full = {**ad, 'drop_id': 'd1', 'pundits': ['zen', 'gaffer']}
+        self.assertFalse(any('RAIL' in e for e in policy.errors(full, fresh)))
+        stale = {**fresh, 'synced_at': (dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=30)).isoformat()}
+        self.assertTrue(any('RAIL' in e for e in policy.errors(full, stale)))
+
     def test_personal_account_refused(self):
         self.assertTrue(any('personal' in e for e in policy.errors({**creative(), 'account_scope': 'personal'}, state())))
 

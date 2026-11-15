@@ -170,8 +170,11 @@ work in Control Centre.
 - WhatsApp copy is for voluntary sharing by listeners. Email requires an
   inbound request or explicit permission covering that message. Keep recipient
   details in their existing system, outside packs and this public repository.
-- No cold press or creator pitches, ads, paid creators, prizes, new SaaS or
-  paid generation. Prepaid credits Krish has already paid for are not new
+- No cold press or creator pitches, paid creators, prizes, new SaaS or
+  paid generation. Paid ads are not banned (Ruling, Krish, 2026-11-15: "Full
+  Time does not ban paid ads"): a paid test waits on D5, which needs D7, and on
+  RELEASE and the whole-match rail gate, and money moves only on his approval of
+  that exact spend; the engine never spends it. Prepaid credits Krish has already paid for are not new
   money: once he releases the engine, its share may be spent by the daily
   session in docs/CREDITS-SESSION.md (Ruling, Krish, 2026-10-29), and nothing
   it makes goes out without its own approval. The active first public channel

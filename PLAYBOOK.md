@@ -38,8 +38,10 @@ survey with denominators. Never relax the thresholds to make a report green.
 Allowed work uses the website/feed, verified Full Time brand identities,
 voluntary listener sharing and inbound or explicitly opted-in product email.
 Personal social accounts, founder launches, personal WhatsApp groups, cold
-email, press/creator pitches, paid promotion and FPL activation are outside
-this execution cycle. Do not generate held drafts for excluded work.
+email, press/creator pitches and FPL activation are outside this execution
+cycle. Do not generate held drafts for excluded work. Paid ads are not
+excluded (Krish, 2026-11-15): a paid test is drafted only as a held item
+waiting on D5, D7, RELEASE and the rail gate.
 
 Email permission must cover its purpose. A launch-note subscription does not
 permit a recap. Private recipient data stays in the original system. The only

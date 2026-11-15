@@ -20,7 +20,7 @@ Full Time's growth engine: it drafts the moves that bring football fans to Full 
 
 ## Who it is for and why it matters for Mindmake
 
-Football fans who become Full Time's returning listeners. It proves Mindmake can grow a product with drafted, approved moves and no paid acquisition.
+Football fans who become Full Time's returning listeners. It proves Mindmake can grow a product with drafted, approved moves at close to no cost.
 
 ## Where it is right now (as of 2026-11-14)
 

@@ -508,3 +508,95 @@ class WeeklyProposals(Hand):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class Planning(unittest.TestCase):
+    """learning.plan, cost_per_event and spend_plan (the Claude Ads review, 2026-11-15): planning
+    only, from declared assumptions, never evidence, and always on judge()'s own bar."""
+
+    def test_the_planned_weeks_meet_judges_bar_at_the_expected_counts(self):
+        for rate_a, rate_b in ((29.4, 19.6), (19.6, 29.4), (12, 4), (60, 45)):
+            with self.subTest(rate_a=rate_a, rate_b=rate_b):
+                out = learning.plan(rate_a, rate_b)
+                weeks = out['matchweeks_needed']
+                a, b = round(rate_a * weeks), round(rate_b * weeks)
+                status, _ = judge(a, b, weeks, True, False, weeks)
+                self.assertEqual(status, 'confirmed' if rate_a > rate_b else 'refuted')
+                self.assertGreaterEqual(out['chance_of_a_call'], 0.8)
+                self.assertFalse(out['evidence'])
+
+    def test_a_thin_arm_is_limited_by_events_not_by_z(self):
+        out = learning.plan(12, 4)
+        self.assertEqual((out['matchweeks_needed'], out['limited_by']), (5, 'events'))
+
+    def test_a_small_lift_on_this_winters_volume_does_not_fit(self):
+        out = learning.plan(24.5 * 1.2, 24.5, max_matchweeks=10)
+        self.assertFalse(out['fits'])
+        self.assertGreater(out['matchweeks_needed'], 10)
+        self.assertIn('does not fit in 10 matchweeks', out['why'])
+        lift = out['smallest_confirmable_lift']
+        self.assertTrue(learning.plan(24.5 * lift, 24.5, max_matchweeks=10)['fits'])
+
+    def test_equal_rates_can_only_end_no_difference(self):
+        out = learning.plan(8, 8, max_matchweeks=4)
+        self.assertIsNone(out['matchweeks_needed'])
+        self.assertEqual(out['limited_by'], 'no_difference_assumed')
+        self.assertTrue(out['fits'])
+        self.assertIn('no_difference', out['why'])
+
+    def test_exposure_scales_the_rates_as_judge_does(self):
+        # Twice the posts and twice the events is the same rate per post: nothing to find.
+        out = learning.plan(20, 10, exposure_a=2, exposure_b=1)
+        self.assertEqual((out['assumed_lift'], out['matchweeks_needed']), (1.0, None))
+
+    def test_an_arm_that_cannot_reach_twenty_events_says_so(self):
+        out = learning.plan(6, 3, max_matchweeks=4)
+        self.assertIsNone(out['smallest_confirmable_lift'])
+        self.assertIn('no lift can be confirmed in time', out['why'])
+
+    def test_bad_inputs_are_refused(self):
+        for args, kwargs in (((0, 5), {}), ((5, -1), {}), ((5, 5), {'power': 1}), ((5, 5), {'max_matchweeks': 1}),
+                             ((float('nan'), 5), {}), ((5, 5), {'exposure_a': 0})):
+            with self.subTest(args=args, kwargs=kwargs):
+                with self.assertRaises(ValueError):
+                    learning.plan(*args, **kwargs)
+
+    def test_cost_per_event_carries_the_counts_band(self):
+        out = learning.cost_per_event(300, 31)
+        self.assertEqual((out['cost_gbp'], out['band_gbp'], out['reading']), (9.68, [7.13, 15.08], 'readable'))
+        thin = learning.cost_per_event(300, 4)
+        self.assertEqual((thin['reading'], thin['band_gbp'][1]), ('directional only', None))
+
+    def test_no_events_and_missing_events_give_no_cost(self):
+        self.assertIsNone(learning.cost_per_event(300, 0)['cost_gbp'])
+        self.assertIsNone(learning.cost_per_event(300, None)['cost_gbp'])
+        with self.assertRaises(ValueError):
+            learning.cost_per_event(-1, 3)
+
+    def test_a_budget_is_readable_only_under_its_ceiling(self):
+        out = learning.spend_plan(300, 2, 12)
+        self.assertEqual((out['expected_events'], out['readable_if_cost_at_most_gbp'], out['readable']),
+                         ([25.0, 150.0], 15.0, 'yes'))
+        self.assertEqual(learning.spend_plan(300, 10, 30)['readable'], 'only at the cheap end')
+        self.assertEqual(learning.spend_plan(300, 20, 30)['readable'], 'no')
+        with self.assertRaises(ValueError):
+            learning.spend_plan(300, 12, 2)
+
+
+class PlanningReviewRegressions(unittest.TestCase):
+    """Findings of the independent review of 15 November 2026, each kept as a test."""
+
+    def test_the_smallest_lift_respects_the_winners_own_event_floor(self):
+        out = learning.plan(1, 10, exposure_a=1, exposure_b=10, max_matchweeks=2)
+        self.assertEqual(out['smallest_confirmable_lift'], 10.0)
+
+    def test_an_arm_b_winner_is_described_as_arm_b(self):
+        out = learning.plan(5, 10, max_matchweeks=4)
+        self.assertEqual((out['lift_of'], out['assumed_lift']), ('b', 2.0))
+        self.assertIn('arm b is assumed 2.0x', out['why'])
+        self.assertIn('lift for arm b', out['why'])
+        lift = out['smallest_confirmable_lift']
+        self.assertTrue(learning.plan(5, 5 * lift, max_matchweeks=4)['fits'])
+
+    def test_readability_is_judged_before_rounding(self):
+        self.assertEqual(learning.spend_plan(499, 25, 25)['readable'], 'no')

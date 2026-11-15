@@ -68,6 +68,7 @@ growth.py formats readiness|lock   # readiness is computed, never written
 growth.py pack check|propose F     # G2
 growth.py buffer receipts ... --record
 growth.py library | session | dispatch | audience | ga4
+growth.py links audit | learning plan|cost   # docs/CLAUDE-ADS.md
 python3 -m unittest discover -s tests; python3 scripts/verify_repository.py
 python3 scripts/baseline.py   # build and run cost, from real logs
 ```

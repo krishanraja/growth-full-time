@@ -274,7 +274,7 @@ All of this is drawn from the approved copy in `docs/07-marketing.md` and `docs/
 | D2 | Cover every Premier League match each weekend instead of one a day | **Approve** | Tribal sharing. About 21 USD per weekend at the measured cost |
 | D3 | Turn on account sign-up and the morning recap for beta users under `PRELAUNCH_MODE` | **Approve** | No sign-up means no "users" to count and no return trigger |
 | D4 | Split the `never_publish` proof narrative from named B2C marketing under Krish's name | **Approve, with a written boundary** | Unlocks LinkedIn, HN and Product Hunt |
-| D5 | Paid creators (≤£600) and a paid ad test (≤£300) | **Approve, with consent closed first** | Paid promotion is currently off by ruling |
+| D5 | Paid creators (≤£600) and a paid ad test (≤£300) | **Approve, with consent closed first** | Paid ads are not banned (Krish, 2026-11-15); this test waits on D5 and D7 |
 | D6 | FPL "Beat the AI Pundits" league | **Approve, framed as a game** | 9–13M FPL managers. No forecast claims |
 | D7 | Close the PostHog/GA consent item using the DUAA analytics exemption plus a banner for GA and pixels | **Approve, with counsel check** | Blocks open marketing and paid ads |
 

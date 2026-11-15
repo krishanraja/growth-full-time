@@ -13,9 +13,11 @@ The engine never turns incomplete access or product gates into a success claim.
 ## Accepted boundaries
 
 No personal social accounts, personal WhatsApp groups, cold outbound email,
-paid acquisition, prizes, new SaaS or paid media generation. Use verified Full
+prizes, new SaaS or paid media generation. Paid ads are not banned (Ruling,
+Krish, 2026-11-15): one paid test waits on D5, which needs D7. Use verified Full
 Time brand identities, voluntary listener sharing and inbound or explicit opt-in
-product email. Target zero incremental marketing cash. Existing agent/hosting
+product email. Target zero incremental marketing cash outside a paid test Krish
+approves. Existing agent/hosting
 costs remain real; unknown usage is reported as unknown.
 
 All code changes stay in growth-fulltime. Full-time and Control Centre receive
@@ -106,7 +108,10 @@ while the engine is held (a held report carries no proposals).
 4. **The standing ruling order D7, then D2, then D3**, and retiring the
    release ask once D1 or ORGANIC is approved (`standing_order`,
    `release_retired`). Main's report still asks the release decision while
-   `policy.release_open` is false.
+   `policy.release_open` is false. Since 15 November D5, the paid test, is
+   among the pending ruling asks, so with three actions and the release ask
+   the report keeps two of its ten proposal slots for the weekly kill list
+   (`reporting.build` cuts at ten).
 5. **Declined posts hold no slot.** v2 skipped an action Krish had already
    answered on its digest, so three declines never blocked a fourth post.
 6. **The capabilities check** (`GET capabilities`, refusing a report version

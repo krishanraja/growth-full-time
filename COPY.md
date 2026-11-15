@@ -90,7 +90,7 @@ product's continuity; it is never sold.
 | Warm one-to-many | Opted-in email; a brand channel's own followers | Permitted when permission and gates pass |
 | Cold one-to-one | Cold email, DMs, press or creator pitches | Excluded |
 | Cold one-to-many, organic | TikTok, Reels and Shorts daily, derived cards elsewhere (ruling 2) | Active per take once a format is ready (rulings 1 and 7) |
-| Cold one-to-many, paid | Ads, boosts, paid creators, prizes | Excluded |
+| Cold one-to-many, paid | Ads, boosts, paid creators, prizes | Paid creators and prizes excluded; one paid ad test waits on D5 (needs D7) and Krish's approval of its spend (2026-11-15) |
 | Others to many (referrals) | Listeners sharing a take | The North Star |
 
 "Hope is not a channel": draft share text a listener can send as is, brief
@@ -202,9 +202,10 @@ context, not just winners" is how the engine learns which takes travel.
 
 Each change is recorded so no session "fixes" it back:
 
-1. **No paid lane.** No ads, boosts, paid creators or prizes; £0 incremental
-   marketing cash. The paid Core Four lane, paid scaling and the spend items
-   in "Before scaling" do not apply.
+1. **No paid lane yet.** No paid creators or prizes. Paid ads are not banned
+   (Krish, 2026-11-15), but one paid test waits on D5 and his approval of its
+   exact spend; until then £0 incremental marketing cash. The paid Core Four
+   lane, paid scaling and the spend items in "Before scaling" do not apply.
 2. **No cold outbound and no personal accounts.** No cold email, DMs, press or
    creator pitches ("Direct outreach structure" is unused). No personal social
    accounts, Krish's contacts, personal WhatsApp groups or personal invites.

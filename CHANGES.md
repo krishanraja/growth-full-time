@@ -5,6 +5,18 @@ Newest first. Record his words with the date, then change the job file and
 words, and in `rulings.json` with the full-time decision-log heading that
 records it.
 
+- 2026-11-15: paid ads are gated, not banned, and the Claude Ads review.
+  Ruling (Krish, 2026-11-15): Full Time does not ban paid ads. His words: "Full Time does not ban paid
+  ads." The bullet in AGENTS.md that listed ads beside paid creators was a session's reading of his
+  17 October words, "as low cost and close to free as possible": `engine/policy.py` refused `ads` as
+  excluded, so the report never asked D5, the one paid test. Now a paid draft waits on D5 (which needs
+  D7), RELEASE, the whole-match rail and CONSENT, from a brand account; D5 is a strategy ask once the
+  engine is released; paid creators and prizes stay excluded; the engine still never spends. The Claude
+  Ads review (docs/CLAUDE-ADS.md) adopted a read-only link audit (`growth.py links audit`) and a test
+  planner with a cost readout (`growth.py learning plan|cost`), and rejected the plugin and every
+  paid-platform audit until a paid test is approved. Its first live run found that a fan's share of any
+  show carries the site card, not the show (share brief, item 6). Nothing was sent, posted or spent.
+
 - 2026-11-15: engine v2 lands on main, keeping main's Control Center report.
   Ruling (Krish, 2026-11-15): Full Time v2 lands on main keeping main's Control Center report. His words:
   "keep main's report". Everything v2 built on 27 October (the signed spec, the matchday pack, Google

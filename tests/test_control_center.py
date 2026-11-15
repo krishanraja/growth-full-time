@@ -309,9 +309,11 @@ class DigestAndReportTests(unittest.TestCase):
         self.assertIn('YT_PROOF_SHORT_C01_H01_V1_20261017', next(h for h in report['holds'] if h['reason'] == 'D1')['detail'])
         walls = {p['proposal_id']: p['wall'] for p in report['proposals']}
         self.assertEqual(walls['fulltime:action:rail'], 'none')
-        for rid in ('release', 'D1', 'D2', 'D3', 'D7'):
+        # D5, the paid test, is an ask since Krish's ruling of 2026-11-15 ("Full Time does not ban paid ads").
+        for rid in ('release', 'D1', 'D2', 'D3', 'D5', 'D7'):
             self.assertEqual(walls[f'fulltime:ruling:{rid}'], 'strategy')
-        for rid in ('D4', 'D5', 'D6'):
+        self.assertNotIn('D5', reasons)
+        for rid in ('D4', 'D6'):
             self.assertNotIn(f'fulltime:ruling:{rid}', walls)
             self.assertIn(rid, reasons)
         self.assertLessEqual(len(report['proposals']), 10)
