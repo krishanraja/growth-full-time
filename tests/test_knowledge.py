@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parent.parent
 _spec = importlib.util.spec_from_file_location('verify_repository', ROOT / 'scripts' / 'verify_repository.py')
 verify = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(verify)
-SOURCES = json.loads((ROOT / 'knowledge' / 'sources.json').read_text())['sources']
+SOURCES = json.loads((ROOT / 'knowledge' / 'sources.json').read_text(encoding='utf-8'))['sources']
 
 
 class PreservedSources(unittest.TestCase):
@@ -48,22 +48,22 @@ class PreservedSources(unittest.TestCase):
             self.assertTrue(verify.source_errors(Path(tmp)))
 
     def test_git_never_converts_preserved_bytes(self):
-        attributes = (ROOT / '.gitattributes').read_text().split('\n')
+        attributes = (ROOT / '.gitattributes').read_text(encoding='utf-8').split('\n')
         for source in SOURCES:
             self.assertIn(f'{source["path"]} -text', attributes)
 
 
 class CopyDoctrine(unittest.TestCase):
     def test_doctrine_is_plain_and_keeps_its_overrides(self):
-        text = (ROOT / 'COPY.md').read_text()
+        text = (ROOT / 'COPY.md').read_text(encoding='utf-8')
         self.assertNotIn('\u2014', text)
         self.assertIn("## Where this engine's rules change the corpus", text)
         self.assertLess(len(text.splitlines()), 250)
 
     def test_drafting_surfaces_point_to_the_doctrine(self):
         for name in ('PLAYBOOK.md', 'jobs/morning.md', 'jobs/weekly.md', 'knowledge/README.md'):
-            self.assertIn('COPY.md', (ROOT / name).read_text(), name)
-        readme = (ROOT / 'knowledge' / 'README.md').read_text()
+            self.assertIn('COPY.md', (ROOT / name).read_text(encoding='utf-8'), name)
+        readme = (ROOT / 'knowledge' / 'README.md').read_text(encoding='utf-8')
         for source in SOURCES:
             self.assertIn(Path(source['path']).name, readme)
 

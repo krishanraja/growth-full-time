@@ -143,7 +143,7 @@ class HistoryTests(unittest.TestCase):
         self.history.checkpoint(pack())
         self.history.checkpoint({**pack(), 'headline':'A changed constraint'})
         backup = next((self.root/'backups').glob('*.json'))
-        expected = json.loads(backup.read_text())
+        expected = json.loads(backup.read_text(encoding='utf-8'))
         self.history.path.write_text('{damaged')
         with self.assertRaises(ValueError): self.history.checkpoint(pack())
         self.assertEqual(self.history.restore(backup), expected)
@@ -284,7 +284,7 @@ class ReportingAndRunnerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root, patch.object(growth,'LOCAL',root), contextlib.redirect_stdout(io.StringIO()):
             History(Path(root)/'engine').checkpoint(pack(creative()))
             main(['export'],growth)
-            exported=json.loads((Path(root)/'handoff/reporting-bundle.json').read_text())
+            exported=json.loads((Path(root)/'handoff/reporting-bundle.json').read_text(encoding='utf-8'))
             self.assertEqual(len(exported['reports']),1)
             self.assertIn(creative()['creative_id'],exported['creative_history'])
     def test_lossless_report_and_strict_receipt(self):
@@ -301,7 +301,7 @@ class ReportingAndRunnerTests(unittest.TestCase):
         self.assertFalse(verify_receipt(bundle,{'ok':True,'report':altered}))
 
     def test_report_envelope_matches_the_published_schema_boundary(self):
-        schema=json.loads(Path(growth.HERE,'contracts/reporting-v2.schema.json').read_text())
+        schema=json.loads(Path(growth.HERE,'contracts/reporting-v2.schema.json').read_text(encoding='utf-8'))
         original=pack(creative())
         bundle=envelope(original,{'id':'fulltime:2026-10-17:daily','digest':fingerprint(original)})
         self.assertEqual(set(bundle),set(schema['required']))
@@ -318,7 +318,7 @@ class ReportingAndRunnerTests(unittest.TestCase):
             records = History(Path(root)/'engine').read()
             self.assertEqual(len(records['packs']),1)
             self.assertEqual(len(records['runs']),1)
-            saved = json.loads(Path(second['report']).read_text())
+            saved = json.loads(Path(second['report']).read_text(encoding='utf-8'))
             self.assertIsNone(saved['scorecard']['unique_completers']['value'])
             self.assertEqual(saved['usage']['model_calls'],0)
             self.assertEqual(saved['reporting_delivery'],'pending_handoff')
@@ -337,7 +337,7 @@ class ReportingAndRunnerTests(unittest.TestCase):
     def test_weekly_review_keeps_human_decisions_untouched(self):
         with tempfile.TemporaryDirectory() as root, patch.object(growth,'LOCAL',root), patch.object(growth,'load_state',return_value=state()):
             result=run(growth,'weekly',offline=True)
-            review=json.loads(Path(result['report']).read_text())['native_weekly_review']
+            review=json.loads(Path(result['report']).read_text(encoding='utf-8'))['native_weekly_review']
             self.assertNotIn('krish_decision',review)
             self.assertNotIn('decided_at',review)
             self.assertEqual(set(review),{'product_slug','week_start','findings','kill_list','double_down'})
