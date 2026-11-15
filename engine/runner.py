@@ -76,7 +76,7 @@ def run(growth, mode, offline=False, observation_file=None, run_date=None):
                                   'measurement': 'Completed and reachable listeners remain unknown.' if measures['reachable_completers']['status'] != 'measured'
                                   else 'Use the sourced scorecard and its complete observation window.',
                                   'delivery': 'Packs stay local; the run report reaches Control Center only through growth.py cc.'},
-                     'kill_list': ['Keep personal social accounts, cold email and paid acquisition excluded.'],
+                     'kill_list': ['Keep personal social accounts and cold email excluded; a paid test waits on D5 and D7.'],
                      'double_down': [item['text'] for item in items]}
     run_digest = fingerprint({'source_sha': state['sha'], 'rail': rail,
                               'observations': rows, 'policy': policy.VERSION})

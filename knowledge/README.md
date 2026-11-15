@@ -67,7 +67,8 @@ Each change below is recorded so no session "fixes" it back:
    fixtures before any pack relies on them.
 8. **The 17 October channel and cost limits narrow the active work.**
    `EXECUTION-PLAN.md` excludes Krish's personal social accounts, cold
-   outbound email, paid creators and ads. It targets £0 new marketing cash
+   outbound email and paid creators. Paid ads are not banned (Krish,
+   2026-11-15): one paid test waits on D5. It targets £0 new marketing cash
    using the product, brand accounts and explicit opt-ins. The source
    document's broader channel banks are historical options, including
    recommendations to use founder profiles or email press and creators.

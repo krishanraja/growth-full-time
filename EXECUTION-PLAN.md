@@ -13,9 +13,11 @@ The engine never turns incomplete access or product gates into a success claim.
 ## Accepted boundaries
 
 No personal social accounts, personal WhatsApp groups, cold outbound email,
-paid acquisition, prizes, new SaaS or paid media generation. Use verified Full
+prizes, new SaaS or paid media generation. Paid ads are not banned (Ruling,
+Krish, 2026-11-15): one paid test waits on D5, which needs D7. Use verified Full
 Time brand identities, voluntary listener sharing and inbound or explicit opt-in
-product email. Target zero incremental marketing cash. Existing agent/hosting
+product email. Target zero incremental marketing cash outside a paid test Krish
+approves. Existing agent/hosting
 costs remain real; unknown usage is reported as unknown.
 
 All code changes stay in growth-fulltime. Full-time and Control Centre receive

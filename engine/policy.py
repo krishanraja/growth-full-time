@@ -16,7 +16,12 @@ from urllib.parse import urlsplit
 from .records import instant
 
 VERSION = 'fulltime-brand-zero-cash-v1'
-EXCLUDED = {'invite', 'linkedin', 'hn', 'producthunt', 'press', 'creator', 'ads', 'fpl'}
+EXCLUDED = {'invite', 'linkedin', 'hn', 'producthunt', 'press', 'creator', 'fpl'}
+# Ruling (Krish, 2026-11-15): "Full Time does not ban paid ads." A paid test is gated, never
+# refused: its ruling D5 (which needs D7) through rulings.json, and, as public acquisition that
+# ORGANIC never opens, RELEASE, CONSENT and the whole-match rail gate. The engine never spends:
+# money moves only on Krish's own approval of that exact spend.
+PAID = {'ads'}
 BRAND_CHANNELS = {'youtube', 'tiktok', 'instagram', 'x', 'reddit', 'threads', 'facebook', 'whatsapp_channel'}
 # The hosts a verified brand identity's source page may sit on, per channel.
 IDENTITY_HOSTS = {'youtube': ('youtube.com', 'youtu.be'), 'tiktok': ('tiktok.com',), 'instagram': ('instagram.com',),
@@ -209,6 +214,15 @@ def errors(item, state=None):
             out.append('public work must be held for RAIL while no eligible match exists')
         if not (state.get('rulings') or {}).get('D7', {}).get('in_force') and 'CONSENT' not in pending:
             out.append('public acquisition must be held for CONSENT until its product review is closed')
+    if platform in PAID:
+        if item.get('account_scope') != 'brand':
+            out.append('a paid test runs from a Full Time brand account: account_scope brand')
+        if not release_open(state) and 'RELEASE' not in pending:
+            out.append('a paid test is public acquisition: hold it for RELEASE (ORGANIC opens no paid channel)')
+        if not any(m.get('fill', 0) >= RAIL_MIN for m in state.get('rail') or []) and 'RAIL' not in pending:
+            out.append(f'a paid test must be held for RAIL until a match has {RAIL_MIN} of 6 AI Pundits')
+        if not (state.get('rulings') or {}).get('D7', {}).get('in_force') and 'CONSENT' not in pending:
+            out.append('a paid test must be held for CONSENT until D7 is closed')
     if platform == 'whatsapp':
         if item.get('distribution') != 'listener_initiated':
             out.append('WhatsApp is voluntary listener sharing only; no owner account or groups')
