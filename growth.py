@@ -1270,7 +1270,7 @@ def self_test():
 
 ENGINE_COMMANDS = ('run', 'history', 'creative', 'experiment', 'metrics', 'assets', 'export', 'cc',
                    'spec', 'formats', 'pack', 'buffer', 'library', 'session', 'dispatch', 'audience', 'ga4',
-                   'fixtures', 'actions', 'invariants')
+                   'fixtures', 'actions', 'invariants', 'links', 'learning')
 
 
 ENGINE_HELP = """engine commands (python3 growth.py <command> --help for each):
@@ -1288,6 +1288,8 @@ ENGINE_HELP = """engine commands (python3 growth.py <command> --help for each):
   dispatch CARD            a Codex task card, behind the allowance guard
   audience actions|plan|followers   brand-profile actions within platform rules
   invariants check         every invariant in invariants/registry.json
+  links audit URL|--pack F  read-only: tracked links keep their tags when they land
+  learning plan|cost       how long a test needs, and cost per event with its band
   ga4 doctor|report|authorize   the fallback Google Analytics reader
   history, creative, experiment, metrics, export, standards   the ledger and creative system
 None of these posts, sends, schedules or spends."""

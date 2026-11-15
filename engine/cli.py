@@ -7,7 +7,7 @@ import sys
 from .records import History, atomic_json
 
 V2 = ('spec', 'formats', 'pack', 'buffer', 'library', 'session', 'dispatch', 'audience', 'fixtures', 'actions',
-      'invariants')
+      'invariants', 'links', 'learning')
 
 
 def _json(path):
@@ -73,6 +73,23 @@ def _add_v2(commands):
     audience = commands.add_parser('audience', help='brand-profile visibility: action rulings, the daily plan, followers')
     audience.add_argument('operation', choices=['actions', 'plan', 'followers'])
     audience.add_argument('--minutes', type=float, default=10)
+    links = commands.add_parser('links', help='read-only: do tracked links keep their tags when they land, and what a share shows')
+    links.add_argument('operation', choices=['audit'])
+    links.add_argument('urls', nargs='*'); links.add_argument('--pack', help='audit every Full Time link in this pack')
+    learning = commands.add_parser('learning', help='plan a test before registering it, and read cost per event')
+    learning.add_argument('operation', choices=['plan', 'cost'])
+    learning.add_argument('--rate-a', type=float, help='plan: expected events a matchweek in arm a')
+    learning.add_argument('--rate-b', type=float, help='plan: expected events a matchweek in arm b')
+    learning.add_argument('--lift', type=float, help='plan: arm a per exposure over arm b, instead of --rate-a')
+    learning.add_argument('--exposure-a', type=float, default=1, help='plan: arm a exposure a matchweek, such as posts')
+    learning.add_argument('--exposure-b', type=float, default=1, help='plan: arm b exposure a matchweek')
+    learning.add_argument('--max-matchweeks', type=int, help='plan: the matchweeks the test may run')
+    learning.add_argument('--power', type=float, default=0.8)
+    learning.add_argument('--spend-gbp', type=float, help='cost: what was spent')
+    learning.add_argument('--events', type=int, help='cost: the events the export counted for that spend')
+    learning.add_argument('--budget-gbp', type=float, help='cost: a budget before it is spent')
+    learning.add_argument('--cost-gbp', type=float, nargs=2, metavar=('LOW', 'HIGH'),
+                          help='cost: the assumed cost band per event for --budget-gbp')
 
 
 def _learning_errors(growth, campaign):
@@ -234,6 +251,26 @@ def _run_v2(args, growth):
         result = actions.compute(growth.LOCAL, reporting.london_today(), state, growth.load_rulings(),
                                  setup_shown=None if args.all else actions.SETUP_SHOWN)
         return '\n'.join(actions.lines(result))
+    if args.command == 'links':
+        from . import links
+        urls = list(args.urls)
+        if args.pack:
+            urls += [u for u in links.links_in(_json(args.pack), growth.OWN_LINK) if u not in urls]
+        return links.audit(urls)
+    if args.command == 'learning':
+        from . import learning
+        if args.operation == 'plan':
+            if args.rate_b is None or (args.rate_a is None) == (args.lift is None):
+                raise ValueError('plan needs --rate-b and one of --rate-a or --lift')
+            if not args.exposure_b > 0:
+                raise ValueError('exposure_b must be above zero')
+            rate_a = args.rate_a if args.lift is None else args.lift * (args.exposure_a / args.exposure_b) * args.rate_b
+            return learning.plan(rate_a, args.rate_b, args.exposure_a, args.exposure_b, args.max_matchweeks, args.power)
+        if args.budget_gbp is not None and args.cost_gbp:
+            return learning.spend_plan(args.budget_gbp, *args.cost_gbp)
+        if args.spend_gbp is not None:
+            return learning.cost_per_event(args.spend_gbp, args.events)
+        raise ValueError('cost needs --spend-gbp with --events, or --budget-gbp with --cost-gbp LOW HIGH')
     if args.command == 'invariants':
         from . import invariants
         result = invariants.check()
@@ -398,6 +435,8 @@ def main(argv, growth):
         if args.command in V2:
             result = _run_v2(args, growth)
             print(result if isinstance(result, str) else json.dumps(result, indent=2, allow_nan=False))
+            if args.command == 'links' and result.get('verdict') == 'fail':
+                raise SystemExit(1)   # a lost tag or a wrong landing is a failed check, said after the full result
             return
         if args.command == 'run':
             if args.require_existing_history and not journal.path.exists():

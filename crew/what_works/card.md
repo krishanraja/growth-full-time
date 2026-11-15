@@ -13,6 +13,8 @@ Crew card (docs/ENGINE-V2.md, section 3), loaded for the weekly learning report 
 
 **Lint before acting: `engine.learning.judge()`.** A claim is "confirmed" only after pre-registration, with no overlapping test, at least two matchweeks, at least 20 events per arm, and z = (a - b) / sqrt(a + b) of 2 or more. "Refuted" is the same bar the other way. Anything less is "directional". The status is computed from the evidence and never written by hand.
 
+Plan before registering: `engine.learning.plan()` gives the matchweeks a test needs at assumed rates; set `planned_matchweeks` from it.
+
 **Measured check after acting: `engine.learning.kill_double_down()`.** Refuted learnings go on the kill list and confirmed ones on the double-down list. Before live, `engine.learning.verdict_analysis()` counts Krish's edits and rejects by format, AI Pundit and repeated reason. `engine.learning.blocked_locks()` names any lock that cites a refuted learning. GA4 landings by creative ID are a leading signal beside the listener counts, never a substitute.
 
 **Never.** Call a result from one matchweek, under 20 events per arm, or from an overlapping test. Feed post-live numbers into readiness. Review work it made.

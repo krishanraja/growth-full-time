@@ -68,7 +68,9 @@ ask on Krish's list, and he posts by hand in Buffer (ruling 3).
    the tracked link from `growth.tracked()`, never a bare `fulltime.fm` in the
    caption; `"whole_match": false` for a single show; the media hashes from the
    receipt; the review link into `03_Runs`. Then
-   `python3 growth.py pack check FILE --spec local/specs/<week>.signed.json` and
+   `python3 growth.py pack check FILE --spec local/specs/<week>.signed.json`,
+   `python3 growth.py links audit --pack FILE` (read-only: a link whose tags do not
+   reach the page it lands on is held, never asked; its result goes in the review), and
    `python3 growth.py pack propose FILE --spec local/specs/<week>.signed.json --context CONTEXT --expires-at <end of matchday, London> --queue`
    `--context` is `{"<creative_id>": {"unit_cost_gbp": 0.0, "unit_minutes": 12, "checks": {}}}`:
    the measured cost and minutes for each item, and any pre-live check the engine

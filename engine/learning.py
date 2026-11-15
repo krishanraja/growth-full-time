@@ -424,3 +424,134 @@ def verdict_analysis(verdicts):
                        for word, count in sorted(totals.items(), key=lambda pair: (-pair[1], pair[0]))
                        if count >= 2]
     return out
+
+
+# ---------------------------------------------------------------------------
+# Planning a test before it is registered (the Claude Ads review, 2026-11-15,
+# docs/CLAUDE-ADS.md: "calculate sample and duration from declared assumptions;
+# disclose approximations"). Planning is never evidence: nothing here is written
+# to the register, and a plan's numbers are assumptions until the export measures them.
+# ---------------------------------------------------------------------------
+POWER = 0.8
+APPROXIMATION = ('Normal approximation to the conditional Poisson test judge() applies: expected z after T '
+                 'matchweeks is k * sqrt(T) with k = (rate_a - r * rate_b) / sqrt(r * (rate_a + rate_b)) and '
+                 'r = exposure_a / exposure_b. The chance is of z crossing the bar in the assumed direction. '
+                 'The rates are declared assumptions, not measurements.')
+
+
+def _rate(value, what):
+    if type(value) not in (int, float) or not math.isfinite(value) or value <= 0:
+        raise ValueError(f'{what} must be a finite number above zero')
+    return float(value)
+
+
+def _chance(k, weeks):
+    """The approximate chance that z crosses the bar in the assumed direction after `weeks`."""
+    from statistics import NormalDist
+    return round(1 - NormalDist().cdf(Z_BAR - abs(k) * math.sqrt(weeks)), 2)
+
+
+def plan(rate_a, rate_b, exposure_a=1, exposure_b=1, max_matchweeks=None, power=POWER):
+    """How many matchweeks a two-arm test needs before judge() can call it, from declared
+    weekly rates (expected events a matchweek in each arm) and each arm's exposure a
+    matchweek. The test needs the longest of: MIN_MATCHWEEKS, enough weeks for the smaller
+    arm to reach MIN_EVENTS, and enough weeks for the chance of crossing Z_BAR to reach
+    `power`. With `max_matchweeks`, it also says whether the test fits and the smallest
+    lift it could confirm in that time."""
+    from statistics import NormalDist
+    rate_a, rate_b = _rate(rate_a, 'rate_a'), _rate(rate_b, 'rate_b')
+    exposure_a, exposure_b = _rate(exposure_a, 'exposure_a'), _rate(exposure_b, 'exposure_b')
+    if type(power) not in (int, float) or not 0.5 <= power < 1:
+        raise ValueError('power must be at least 0.5 and under 1')
+    if max_matchweeks is not None:
+        _whole(max_matchweeks, 'max_matchweeks', MIN_MATCHWEEKS)
+    ratio = exposure_a / exposure_b
+    k = (rate_a - ratio * rate_b) / math.sqrt(ratio * (rate_a + rate_b))
+    needs = {'minimum': MIN_MATCHWEEKS, 'events': math.ceil(MIN_EVENTS / min(rate_a, rate_b) - 1e-9)}
+    target = Z_BAR + NormalDist().inv_cdf(power)
+    lift = round(rate_a / (ratio * rate_b), 2)
+    out = {'rate_a': rate_a, 'rate_b': rate_b, 'exposure_a': exposure_a, 'exposure_b': exposure_b,
+           'assumed_lift': lift, 'power': power, 'bar': {'z': Z_BAR, 'events_per_arm': MIN_EVENTS,
+                                                          'matchweeks': MIN_MATCHWEEKS},
+           'approximation': APPROXIMATION, 'evidence': False}
+    if abs(k) < 1e-12:
+        out.update(matchweeks_needed=None, limited_by='no_difference_assumed',
+                   why=(f'Equal rates assumed: the test can only end no_difference, after at least '
+                        f'{max(needs.values())} matchweeks.'))
+    else:
+        needs['power'] = math.ceil((target / abs(k)) ** 2 - 1e-9)
+        weeks = max(needs.values())
+        limited = max(needs, key=lambda key: (needs[key], key == 'power'))
+        winner = 'a' if k > 0 else 'b'
+        out.update(matchweeks_needed=weeks, limited_by=limited, expected_winner=winner,
+                   expected_at_end={'a': round(rate_a * weeks, 1), 'b': round(rate_b * weeks, 1),
+                                    'z': _shown(k * math.sqrt(weeks))},
+                   chance_of_a_call=_chance(k, weeks),
+                   why=(f'{weeks} matchweeks, set by {limited}: arm {winner} is assumed {lift}x per exposure, '
+                        f'so z is expected to reach {_shown(k * math.sqrt(weeks)):.2f}; '
+                        f'{"confirmed" if winner == "a" else "refuted"} is then about '
+                        f'{round(_chance(k, weeks) * 100)}% likely.'))
+    if max_matchweeks is None:
+        return out
+    if out['matchweeks_needed'] is None:
+        fits = max(needs.values()) <= max_matchweeks   # it can end no_difference in time
+    else:
+        fits = out['matchweeks_needed'] <= max_matchweeks
+    out.update(max_matchweeks=max_matchweeks, fits=fits)
+    if out['matchweeks_needed'] is not None:
+        out['chance_by_max'] = _chance(k, max_matchweeks)
+    if rate_b * max_matchweeks < MIN_EVENTS:
+        out['smallest_confirmable_lift'] = None
+        out['why'] += (f' In {max_matchweeks} matchweeks arm b reaches about {round(rate_b * max_matchweeks, 1)} '
+                       f'events, under {MIN_EVENTS}: no lift can be confirmed in time. Pool arms or test for longer.')
+        return out
+    c = target ** 2 / max_matchweeks
+    gap = (c * ratio + math.sqrt((c * ratio) ** 2 + 4 * c * ratio * rate_b * (ratio + 1))) / 2
+    smallest = (ratio * rate_b + gap) / (ratio * rate_b)
+    out['smallest_confirmable_lift'] = math.ceil(smallest * 100) / 100
+    if out['matchweeks_needed'] is None or not fits:
+        out['why'] += ((f' It does not fit in {max_matchweeks} matchweeks: in that time' if not fits
+                        else f' In {max_matchweeks} matchweeks') + ' only a lift of about '
+                       f'{out["smallest_confirmable_lift"]}x or more is likely to be confirmed.')
+    return out
+
+
+def cost_per_event(spend_gbp, events):
+    """What each counted event cost, with the band the count's rough 95% interval gives:
+    spend / count, and spend over each end of the count's interval. Under MIN_EVENTS the
+    reading is directional. A missing count stays missing and zero events give no cost,
+    never an infinite one (Claude Ads: never hide a division by zero)."""
+    if type(spend_gbp) not in (int, float) or not math.isfinite(spend_gbp) or spend_gbp < 0:
+        raise ValueError('spend_gbp must be a finite amount of zero or more')
+    out = {'spend_gbp': round(float(spend_gbp), 2), 'events': events}
+    if events is None:
+        return {**out, 'cost_gbp': None, 'band_gbp': None, 'why': 'events missing: no cost per event'}
+    _whole(events, 'events')
+    if events == 0:
+        return {**out, 'cost_gbp': None, 'band_gbp': None,
+                'why': 'no events counted: there is no cost per event to report'}
+    low, high = poisson_interval(events)
+    band = [round(spend_gbp / high, 2), round(spend_gbp / low, 2) if low > 0 else None]
+    reading = 'directional only' if events < MIN_EVENTS else 'readable'
+    return {**out, 'cost_gbp': round(spend_gbp / events, 2), 'band_gbp': band, 'reading': reading,
+            'why': (f'£{spend_gbp / events:.2f} each; the count\'s rough 95% interval {low} to {high} gives '
+                    f'£{band[0]:.2f} to ' + (f'£{band[1]:.2f}' if band[1] is not None else 'no upper bound')
+                    + (f'. Readable: {events} events, at least the {MIN_EVENTS} the bar reads.' if events >= MIN_EVENTS
+                       else f'. Directional only: {events} of the {MIN_EVENTS} events the bar reads.'))}
+
+
+def spend_plan(budget_gbp, cost_low_gbp, cost_high_gbp):
+    """Before a spend: the events a budget buys across an assumed cost band, and the cost per
+    event at which it still reaches MIN_EVENTS, the least the What-Works bar reads."""
+    budget = _rate(budget_gbp, 'budget_gbp')
+    low, high = _rate(cost_low_gbp, 'cost_low_gbp'), _rate(cost_high_gbp, 'cost_high_gbp')
+    if low > high:
+        raise ValueError('cost_low_gbp must not be above cost_high_gbp')
+    events = [round(budget / high, 1), round(budget / low, 1)]
+    ceiling = round(budget / MIN_EVENTS, 2)
+    readable = 'yes' if events[0] >= MIN_EVENTS else ('no' if events[1] < MIN_EVENTS else 'only at the cheap end')
+    return {'budget_gbp': budget, 'assumed_cost_band_gbp': [low, high], 'expected_events': events,
+            'readable_if_cost_at_most_gbp': ceiling, 'readable': readable, 'evidence': False,
+            'why': (f'£{budget:.0f} buys about {events[0]} to {events[1]} events at £{low:.2f} to £{high:.2f} each. '
+                    f'It reaches {MIN_EVENTS} events, the least the What-Works bar reads, only if each costs '
+                    f'£{ceiling:.2f} or less. Assumed costs, not measurements.')}
