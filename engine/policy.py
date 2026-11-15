@@ -219,8 +219,11 @@ def errors(item, state=None):
             out.append('a paid test runs from a Full Time brand account: account_scope brand')
         if not release_open(state) and 'RELEASE' not in pending:
             out.append('a paid test is public acquisition: hold it for RELEASE (ORGANIC opens no paid channel)')
-        if not any(m.get('fill', 0) >= RAIL_MIN for m in state.get('rail') or []) and 'RAIL' not in pending:
-            out.append(f'a paid test must be held for RAIL until a match has {RAIL_MIN} of 6 AI Pundits')
+        # The whole-match bar on the ad's own match, from a fresh sync: paid reach onto a thin rail buys churn.
+        why = take_gate({**item, 'whole_match': True}, state)
+        if why and 'RAIL' not in pending:
+            out.append(f'a paid test must be held for RAIL until its own match has {RAIL_MIN} of 6 AI Pundits '
+                       f'on a fresh rail: {why}')
         if not (state.get('rulings') or {}).get('D7', {}).get('in_force') and 'CONSENT' not in pending:
             out.append('a paid test must be held for CONSENT until D7 is closed')
     if platform == 'whatsapp':

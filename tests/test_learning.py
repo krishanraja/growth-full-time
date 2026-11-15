@@ -581,3 +581,22 @@ class Planning(unittest.TestCase):
         self.assertEqual(learning.spend_plan(300, 20, 30)['readable'], 'no')
         with self.assertRaises(ValueError):
             learning.spend_plan(300, 12, 2)
+
+
+class PlanningReviewRegressions(unittest.TestCase):
+    """Findings of the independent review of 15 November 2026, each kept as a test."""
+
+    def test_the_smallest_lift_respects_the_winners_own_event_floor(self):
+        out = learning.plan(1, 10, exposure_a=1, exposure_b=10, max_matchweeks=2)
+        self.assertEqual(out['smallest_confirmable_lift'], 10.0)
+
+    def test_an_arm_b_winner_is_described_as_arm_b(self):
+        out = learning.plan(5, 10, max_matchweeks=4)
+        self.assertEqual((out['lift_of'], out['assumed_lift']), ('b', 2.0))
+        self.assertIn('arm b is assumed 2.0x', out['why'])
+        self.assertIn('lift for arm b', out['why'])
+        lift = out['smallest_confirmable_lift']
+        self.assertTrue(learning.plan(5, 5 * lift, max_matchweeks=4)['fits'])
+
+    def test_readability_is_judged_before_rounding(self):
+        self.assertEqual(learning.spend_plan(499, 25, 25)['readable'], 'no')

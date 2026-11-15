@@ -154,5 +154,58 @@ class Packs(unittest.TestCase):
             links.audit([])
 
 
+
+class ReviewRegressions(unittest.TestCase):
+    """Findings of the independent review of 15 November 2026, each kept as a test."""
+
+    def test_a_backslash_redirect_is_off_full_time_and_never_fetched(self):
+        site = Site({SHOW: (302, '/\\elsewhere.example/?drop=d&pundit=zen', 'text/plain', b'')}, default=ok())
+        row = links.audit_one(SHOW, site)
+        self.assertEqual((row['checks']['on_full_time']['result'], row['verdict']), ('fail', 'fail'))
+        self.assertEqual(site.asked, [SHOW])
+
+    def test_a_malformed_redirect_fails_without_crashing(self):
+        for location in ('https://fulltime.fm:99999/', 'https://[::1/', 'https://:pw@fulltime.fm/', '/x\tpath'):
+            with self.subTest(location=location):
+                site = Site({SHOW: (301, location, 'text/plain', b'')}, default=ok())
+                row = links.audit_one(SHOW, site)
+                self.assertEqual(row['checks']['on_full_time']['result'], 'fail')
+                self.assertEqual(site.asked, [SHOW])
+
+    def test_userinfo_with_only_a_password_is_never_fetched(self):
+        site = Site({}, default=ok())
+        self.assertEqual(links.audit_one('https://:pw@fulltime.fm/?drop=d', site)['verdict'], 'fail')
+        self.assertEqual(site.asked, [])
+
+    def test_a_chain_not_read_to_its_end_is_unknown_not_on_full_time(self):
+        import http.client
+        for error in (OSError('reset'), http.client.IncompleteRead(b'')):
+            with self.subTest(error=type(error).__name__):
+                row = links.audit_one(SHOW, Site({SHOW: error}))
+                self.assertEqual(row['checks']['on_full_time']['result'], 'unknown')
+                self.assertEqual(row['verdict'], 'unknown')
+        endless = links.audit_one(SHOW, Site({}, default=(307, SHOW, 'text/plain', b'')))
+        self.assertEqual(endless['checks']['on_full_time']['result'], 'unknown')
+
+    def test_every_utm_tag_is_checked(self):
+        tagged = SHOW + '&utm_term=derby'
+        site = Site({tagged: (301, SHOW, 'text/plain', b''), SHOW: ok()})
+        row = links.audit_one(tagged, site)
+        self.assertEqual(row['checks']['tags_survive']['result'], 'fail')
+        self.assertIn('utm_term', row['checks']['tags_survive']['why'])
+
+    def test_a_share_token_moved_into_a_path_or_fragment_is_never_printed(self):
+        shared = f'https://fulltime.fm/?drop={DROP}&pundit=zen&s={TOKEN}'
+        moved = f'https://fulltime.fm/share/{TOKEN}#s={TOKEN}'
+        result = links.audit([shared], Site({shared: (302, moved, 'text/plain', b''), moved.split('#')[0]: ok()},
+                                            default=ok()))
+        self.assertNotIn(TOKEN, json.dumps(result))
+
+    def test_a_bare_mention_in_a_note_for_krish_is_not_audited(self):
+        pack = {'items': [{'platform': 'other', 'text': 'Check fulltime.fm before Saturday.'},
+                          {'platform': 'tiktok', 'text': 'Hear it at fulltime.fm/today'}]}
+        self.assertEqual(links.links_in(pack, growth.OWN_LINK), ['fulltime.fm/today'])
+
+
 if __name__ == '__main__':
     unittest.main()

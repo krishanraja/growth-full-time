@@ -24,12 +24,14 @@ MAX_HOPS redirects, at most LIMIT bytes read per page. A share token's value nev
 in the output. Nothing here posts, sends, schedules or spends.
 """
 from html.parser import HTMLParser
+import http.client
+import re
 import urllib.error
 import urllib.parse
 import urllib.request
 
 HOSTS = ('fulltime.fm', 'www.fulltime.fm')
-KEPT = ('utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 's', 'drop', 'pundit')
+KEPT = ('s', 'drop', 'pundit')   # with every utm_* key the link carries
 EDITION = ('drop', 'pundit')
 SECRET = ('s',)
 RESULTS = ('pass', 'fail', 'unknown', 'not_applicable')
@@ -40,6 +42,10 @@ TIMEOUT = 20
 REDIRECTS = (301, 302, 303, 307, 308)
 USER_AGENT = 'growth-fulltime link audit (+https://github.com/krishanraja/growth-fulltime)'
 TRAILING = '.,;:!?'
+INTERNAL = ('site', 'other')   # notes for Krish, where a bare fulltime.fm is not a link anyone clicks
+# A backslash, a space or a control character in a URL: browsers read some of them as a path
+# separator or strip them, so the host Python parses may not be the host a fan reaches.
+UNSAFE = re.compile(r'[\\\x00-\x20\x7f]')
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -64,14 +70,26 @@ def fetch(url, timeout=TIMEOUT):
         return error.code, error.headers.get('Location'), error.headers.get('Content-Type') or '', body
 
 
-def shown(url):
-    """The URL as the audit prints it: a share token's value replaced, everything else as it is."""
-    parts = urllib.parse.urlsplit(url)
-    pairs = urllib.parse.parse_qsl(parts.query, keep_blank_values=True)
+def _redacted(text):
+    pairs = urllib.parse.parse_qsl(text, keep_blank_values=True)
     if not any(key in SECRET for key, _ in pairs):
-        return url
-    query = urllib.parse.urlencode([(k, 'REDACTED' if k in SECRET else v) for k, v in pairs], safe='()')
-    return urllib.parse.urlunsplit(parts._replace(query=query))
+        return text
+    return urllib.parse.urlencode([(k, 'REDACTED' if k in SECRET else v) for k, v in pairs], safe='()')
+
+
+def shown(url, secrets=()):
+    """The URL as the audit prints it: a share token's value replaced wherever it appears (its
+    query, its fragment, or a path the site moved it into), everything else as it is."""
+    try:
+        parts = urllib.parse.urlsplit(url)
+        url = urllib.parse.urlunsplit(parts._replace(query=_redacted(parts.query),
+                                                     fragment=_redacted(parts.fragment)))
+    except ValueError:
+        pass
+    for secret in secrets:
+        if len(secret) >= 4:
+            url = url.replace(secret, 'REDACTED').replace(urllib.parse.quote(secret, safe=''), 'REDACTED')
+    return url
 
 
 def _params(url):
@@ -83,8 +101,20 @@ def _params(url):
 
 
 def _on_full_time(url):
-    parts = urllib.parse.urlsplit(url)
-    return parts.scheme == 'https' and (parts.hostname or '').lower() in HOSTS and not parts.username and parts.port in (None, 443)
+    """True only for a plain https URL on fulltime.fm or www.fulltime.fm: no userinfo, no port
+    but 443, and no character a browser might read differently from Python."""
+    if not isinstance(url, str) or UNSAFE.search(url):
+        return False
+    try:
+        parts = urllib.parse.urlsplit(url)
+        return (parts.scheme == 'https' and '@' not in parts.netloc
+                and (parts.hostname or '').lower() in HOSTS and parts.port in (None, 443))
+    except ValueError:   # an invalid port or bracketed host
+        return False
+
+
+def _carried(url):
+    return {k: v for k, v in _params(url).items() if k.startswith('utm_') or k in KEPT}
 
 
 class _Head(HTMLParser):
@@ -123,7 +153,8 @@ def audit_one(url, opener=fetch):
     checks = {}
     hops = []
     url = url.strip().rstrip(TRAILING)
-    carried = {k: v for k, v in _params(url).items() if k in KEPT}
+    carried = _carried(url)
+    secrets = tuple(v for key in SECRET for v in carried.get(key, []))
     if urllib.parse.urlsplit(url).scheme != 'https':
         checks['https'] = _check('fail', 'the link is not https (paste the exact link growth.py link prints)')
     else:
@@ -132,22 +163,29 @@ def audit_one(url, opener=fetch):
         checks['on_full_time'] = _check('fail', 'the link is not on fulltime.fm over https, so it was not fetched')
         for name in CHECKS[2:]:
             checks[name] = _check('unknown', 'not fetched')
-        return _finish(url, hops, checks)
+        return _finish(url, hops, checks, secrets)
     current, page, outcome = url, None, None
     for _ in range(MAX_HOPS + 1):
         try:
             status, location, content_type, body = opener(current)
-        except (OSError, ValueError) as error:   # URLError, timeouts and refused connections are OSError
-            hops.append({'url': shown(current), 'status': None, 'error': type(error).__name__})
+        except (OSError, ValueError, http.client.HTTPException) as error:
+            # URLError, timeouts and refused connections are OSError; a broken body is HTTPException
+            hops.append({'url': shown(current, secrets), 'status': None, 'error': type(error).__name__})
+            checks['on_full_time'] = _check('unknown', f'{len(hops) - 1} hop(s) on Full Time, then the chain '
+                                                       'could not be read to its end')
             outcome = _check('unknown', f'the page could not be read ({type(error).__name__})')
             break
-        hops.append({'url': shown(current), 'status': status})
+        hops.append({'url': shown(current, secrets), 'status': status})
         if status in REDIRECTS and location:
-            following = urllib.parse.urljoin(current, location)
+            try:
+                following = '' if UNSAFE.search(location) else urllib.parse.urljoin(current, location)
+            except ValueError:
+                following = ''
             if not _on_full_time(following):
-                checks['on_full_time'] = _check('fail', f'hop {len(hops)} redirects off Full Time to '
-                                                        f'{shown(following)}; it was not fetched')
-                hops.append({'url': shown(following), 'status': 'not fetched'})
+                checks['on_full_time'] = _check('fail', f'hop {len(hops)} redirects off Full Time, or to a URL a '
+                                                        f'browser may read differently ({shown(location, secrets)!r}); '
+                                                        'it was not fetched')
+                hops.append({'url': shown(location, secrets), 'status': 'not fetched'})
                 outcome = _check('fail', 'it never landed on a Full Time page')
                 break
             current = following
@@ -159,6 +197,7 @@ def audit_one(url, opener=fetch):
             outcome = _check('fail', f'the last hop answered {status}')
         break
     else:
+        checks['on_full_time'] = _check('unknown', f'more than {MAX_HOPS} redirects: the end was not seen')
         outcome = _check('fail', f'more than {MAX_HOPS} redirects')
     checks.setdefault('on_full_time', _check('pass', f'{len(hops)} hop(s), all on Full Time'))
     checks['lands'] = outcome
@@ -178,12 +217,12 @@ def audit_one(url, opener=fetch):
                                    'no page to read')
         checks['preview_keeps_show'] = (_check('not_applicable', 'the link names no show') if 'drop' not in carried
                                         else _check(checks['preview']['result'], 'no page to read'))
-        return _finish(url, hops, checks)
+        return _finish(url, hops, checks, secrets)
     if page is None:
         checks['preview'] = _check('unknown', 'the page is not HTML, so its share card could not be read')
         checks['preview_keeps_show'] = _check('not_applicable' if 'drop' not in carried else 'unknown',
                                               'the link names no show' if 'drop' not in carried else 'not HTML')
-        return _finish(url, hops, checks)
+        return _finish(url, hops, checks, secrets)
     meta = page['meta']
     missing = [k for k in ('og:title', 'og:image') if not meta.get(k)]
     checks['preview'] = (_check('fail', 'no ' + ' or '.join(missing) + ', so a share shows a bare link') if missing
@@ -196,31 +235,37 @@ def audit_one(url, opener=fetch):
         if not pointer:
             checks['preview_keeps_show'] = _check('pass', 'no og:url or canonical: a share card is read from the link itself')
         else:
-            target = _params(urllib.parse.urljoin(current, pointer))
+            try:
+                target = _params(urllib.parse.urljoin(current, pointer))
+            except ValueError:
+                target = {}
             lost = [k for k in EDITION if k in carried and target.get(k) != carried[k]]
             checks['preview_keeps_show'] = (
-                _check('fail', f'{named} is {shown(pointer)}, which drops {", ".join(lost)}: a fan\'s share shows the '
+                _check('fail', f'{named} is {shown(pointer, secrets)}, which drops {", ".join(lost)}: a fan\'s share shows the '
                                'site card, not this AI Pundit\'s show (share brief, item 6)') if lost
                 else _check('pass', f'{named} keeps the show\'s drop and AI Pundit'))
-    return _finish(url, hops, checks)
+    return _finish(url, hops, checks, secrets)
 
 
-def _finish(url, hops, checks):
+def _finish(url, hops, checks, secrets=()):
     results = [c['result'] for c in checks.values()]
     verdict = 'fail' if 'fail' in results else ('unknown' if 'unknown' in results else 'pass')
-    return {'url': shown(url), 'verdict': verdict, 'checks': {k: checks[k] for k in CHECKS}, 'hops': hops}
+    return {'url': shown(url, secrets), 'verdict': verdict, 'checks': {k: checks[k] for k in CHECKS}, 'hops': hops}
 
 
 def links_in(pack, own_link):
     """Every Full Time link in a pack: each item's target_url and the links in its text, in order, once.
-    `own_link` is growth.OWN_LINK, the pattern the pack check uses."""
+    `own_link` is growth.OWN_LINK, the pattern the pack check uses. As in the pack check, a bare
+    fulltime.fm in a note for Krish (platform site or other) is not a link anyone clicks."""
     found = []
     for item in pack.get('items') or []:
         if not isinstance(item, dict):
             continue
         candidates = [item.get('target_url')] if isinstance(item.get('target_url'), str) else []
         if isinstance(item.get('text'), str):
-            candidates += own_link.findall(item['text'])
+            internal = str(item.get('platform', '')).lower() in INTERNAL
+            candidates += [x for x in own_link.findall(item['text'])
+                           if not (internal and not re.match(r'https?://', x, re.I))]
         for raw in candidates:
             link = raw.strip().rstrip(TRAILING)
             if link and link not in found:

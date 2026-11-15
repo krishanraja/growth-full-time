@@ -469,9 +469,12 @@ def plan(rate_a, rate_b, exposure_a=1, exposure_b=1, max_matchweeks=None, power=
     k = (rate_a - ratio * rate_b) / math.sqrt(ratio * (rate_a + rate_b))
     needs = {'minimum': MIN_MATCHWEEKS, 'events': math.ceil(MIN_EVENTS / min(rate_a, rate_b) - 1e-9)}
     target = Z_BAR + NormalDist().inv_cdf(power)
-    lift = round(rate_a / (ratio * rate_b), 2)
+    # The assumed winner, and its rate per exposure over the other arm's (a by convention when equal).
+    winner = 'b' if k < 0 else 'a'
+    win_rate, base_rate, win_ratio = (rate_b, rate_a, 1 / ratio) if winner == 'b' else (rate_a, rate_b, ratio)
+    lift = round(win_rate / (win_ratio * base_rate), 2)
     out = {'rate_a': rate_a, 'rate_b': rate_b, 'exposure_a': exposure_a, 'exposure_b': exposure_b,
-           'assumed_lift': lift, 'power': power, 'bar': {'z': Z_BAR, 'events_per_arm': MIN_EVENTS,
+           'assumed_lift': lift, 'lift_of': winner, 'power': power, 'bar': {'z': Z_BAR, 'events_per_arm': MIN_EVENTS,
                                                           'matchweeks': MIN_MATCHWEEKS},
            'approximation': APPROXIMATION, 'evidence': False}
     if abs(k) < 1e-12:
@@ -482,7 +485,6 @@ def plan(rate_a, rate_b, exposure_a=1, exposure_b=1, max_matchweeks=None, power=
         needs['power'] = math.ceil((target / abs(k)) ** 2 - 1e-9)
         weeks = max(needs.values())
         limited = max(needs, key=lambda key: (needs[key], key == 'power'))
-        winner = 'a' if k > 0 else 'b'
         out.update(matchweeks_needed=weeks, limited_by=limited, expected_winner=winner,
                    expected_at_end={'a': round(rate_a * weeks, 1), 'b': round(rate_b * weeks, 1),
                                     'z': _shown(k * math.sqrt(weeks))},
@@ -500,18 +502,24 @@ def plan(rate_a, rate_b, exposure_a=1, exposure_b=1, max_matchweeks=None, power=
     out.update(max_matchweeks=max_matchweeks, fits=fits)
     if out['matchweeks_needed'] is not None:
         out['chance_by_max'] = _chance(k, max_matchweeks)
-    if rate_b * max_matchweeks < MIN_EVENTS:
+    other = 'a' if winner == 'b' else 'b'
+    if base_rate * max_matchweeks < MIN_EVENTS:
         out['smallest_confirmable_lift'] = None
-        out['why'] += (f' In {max_matchweeks} matchweeks arm b reaches about {round(rate_b * max_matchweeks, 1)} '
-                       f'events, under {MIN_EVENTS}: no lift can be confirmed in time. Pool arms or test for longer.')
+        out['why'] += (f' In {max_matchweeks} matchweeks arm {other} reaches about '
+                       f'{round(base_rate * max_matchweeks, 1)} events, under {MIN_EVENTS}: no lift can be '
+                       'confirmed in time. Pool arms or test for longer.')
         return out
+    # The lift for the winner, holding the other arm's rate: enough z for `power` (the larger root of
+    # (x)^2 = c * w * (x + w * base + base) with x = winner's rate - w * base, w the exposure ratio),
+    # and enough events in the winner's own arm.
     c = target ** 2 / max_matchweeks
-    gap = (c * ratio + math.sqrt((c * ratio) ** 2 + 4 * c * ratio * rate_b * (ratio + 1))) / 2
-    smallest = (ratio * rate_b + gap) / (ratio * rate_b)
-    out['smallest_confirmable_lift'] = math.ceil(smallest * 100) / 100
+    gap = (c * win_ratio + math.sqrt((c * win_ratio) ** 2 + 4 * c * win_ratio * base_rate * (win_ratio + 1))) / 2
+    by_z = 1 + gap / (win_ratio * base_rate)
+    by_events = MIN_EVENTS / (max_matchweeks * win_ratio * base_rate)
+    out['smallest_confirmable_lift'] = math.ceil(max(by_z, by_events) * 100 - 1e-9) / 100
     if out['matchweeks_needed'] is None or not fits:
         out['why'] += ((f' It does not fit in {max_matchweeks} matchweeks: in that time' if not fits
-                        else f' In {max_matchweeks} matchweeks') + ' only a lift of about '
+                        else f' In {max_matchweeks} matchweeks') + f' only a lift for arm {winner} of about '
                        f'{out["smallest_confirmable_lift"]}x or more is likely to be confirmed.')
     return out
 
@@ -549,7 +557,8 @@ def spend_plan(budget_gbp, cost_low_gbp, cost_high_gbp):
         raise ValueError('cost_low_gbp must not be above cost_high_gbp')
     events = [round(budget / high, 1), round(budget / low, 1)]
     ceiling = round(budget / MIN_EVENTS, 2)
-    readable = 'yes' if events[0] >= MIN_EVENTS else ('no' if events[1] < MIN_EVENTS else 'only at the cheap end')
+    readable = ('yes' if budget / high >= MIN_EVENTS else      # compared before rounding
+                ('no' if budget / low < MIN_EVENTS else 'only at the cheap end'))
     return {'budget_gbp': budget, 'assumed_cost_band_gbp': [low, high], 'expected_events': events,
             'readable_if_cost_at_most_gbp': ceiling, 'readable': readable, 'evidence': False,
             'why': (f'£{budget:.0f} buys about {events[0]} to {events[1]} events at £{low:.2f} to £{high:.2f} each. '
