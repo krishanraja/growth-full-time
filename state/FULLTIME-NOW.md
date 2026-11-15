@@ -1,6 +1,6 @@
 # Full Time now
 
-Read from `krishanraja/full-time` at commit `3fbe8a9fbe` and from fulltime.fm on 2026-11-15T01:58:16+00:00 UTC by `python3 growth.py sync`.
+Read from `krishanraja/full-time` at commit `3fbe8a9fbe` and from fulltime.fm on 2026-11-15T21:53:01+00:00 UTC by `python3 growth.py sync`.
 Rewritten when a sync finds full-time, its open pull requests, the rail or the feed changed. The full-time repository and the live site are the source of truth; this is a reading of them.
 
 ## Push gate: HOLD
@@ -16,24 +16,34 @@ No match has 4 of 6 AI Pundits (newest: 1 of 6). A push sends fans to a match on
 | Manchester City 5-3 Sunderland | 2026-09-20 | 1 of 6 | The Romantic |
 | Tottenham 2-3 Aston Villa | 2026-09-19 | 1 of 6 | The Gaffer |
 
-## Canon changed since the last sync
+## Krish's actions
 
-Read these again before drafting anything:
+His matchday and plan answers wait in Control Center; `growth.py actions` lists them with the rest. From what this public reading can see:
 
-- changed: `AGENTS.md`
-- changed: `NOW.md`
+- Rule on D7 in Control Center: Close the PostHog and Google Analytics consent item.
+- Switch Full Time to handcrafted in Control Center (one click), so every approved post comes back to you to post by hand. (1 min, one-off)
+- Listen to the whole Liverpool v8 mix once, on headphones, and give it one verdict: post it, change it (say what), or bin it. It is session/outputs/Liverpool-v8-mid-broadcast-TV-mix.mp3 in the session archive in Drive Growth Build/06_Reference/creative-handoff/2026-10-27/ (HANDOVER-2026-10-27-CREATIVES.md). (3 min, one-off)
+- Approve briefs/2026-10-27-decision-log-rulings.md and start a full-time session with it, so the per-take ruling (D1 and ORGANIC) comes into force. (2 min, one-off)
+- Approve the two product briefs (share attribution and rail supply) so a full-time session can build them. (5 min, one-off)
+- Create the Full Time handles on YouTube (a Brand Account), TikTok and Instagram (Business) first, with one handle everywhere and the brand inbox, never a personal email. Then reserve Threads, X, Facebook and a WhatsApp Channel. (30 min, one-off)
+- Connect the three Full Time channels to Buffer and put their Buffer channel IDs in local/buffer-channels.json (copy examples/buffer-channels.example.json). (10 min, one-off)
+- Start a Control Center session with briefs/2026-10-27-control-center-measurement.md, so its directive carries ga4_landings and registers the two new objective keys. (2 min, one-off)
+- Run the Cowork prompt in briefs/2026-10-27-cowork-canva-brand-kit.md on your PC: the Full Time brand kit and six templates in Canva, built from the approved social kit. (20 min, one-off)
+- Let a session on your PC run scripts/baseline.py over your Codex and Claude logs, so the 20x cost target has a real baseline. (5 min, one-off)
 
 ## Rulings the playbook needs
 
 | Ruling | Here | In full-time's decision log | In force |
 |---|---|---|---|
-| D1: Invite-led at scale: testers and every shared edition invite others; fan channels open | pending | no | no |
+| D1: Invite-led at scale: testers and every shared edition invite others; fan channels open | approved | no | no |
 | D2: Cover every Premier League match each weekend, not one a day | pending | no | no |
 | D3: Sign-up after the first finished show, and the morning recap for beta users | pending | no | no |
 | D4: Name Full Time under Krish's own name: LinkedIn, Show HN, Product Hunt, press | pending | no | no |
 | D5: Paid creators (up to £600) and one paid test (up to £300) | pending | no | no |
 | D6: FPL "Beat the AI Pundits" league, framed as a game, never as forecast performance | pending | no | no |
 | D7: Close the PostHog and Google Analytics consent item | pending | no | no |
+| ORGANIC: Organic brand posts recruit pilot-beta testers before the December release, gated per take | approved | no | no |
+| RELEASE: The product release decision | pending | no | no |
 
 ## Latest decisions (full-time `docs/12-roadmap.md`)
 
@@ -66,8 +76,7 @@ Read these again before drafting anything:
 
 ## Recent commits on main
 
-- `3fbe8a9fbe` 2026-11-14 docs(steward): 2026-11-14 re-stamp NOW.md head after canon sync
-- `47c1acd046` 2026-11-14 docs(canon): sync the canon block to v2026.11.14.5 (#112)
+- none since the last sync
 
 ## Work in flight (open pull requests)
 

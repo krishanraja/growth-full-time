@@ -16,29 +16,23 @@
   "canon_added": [],
   "canon_from_index": true,
   "canon_removed": [],
-  "changed_since_last_sync": [
-    "AGENTS.md",
-    "NOW.md"
-  ],
-  "commits": [
-    {
-      "date": "2026-11-14T23:59:04Z",
-      "sha": "3fbe8a9fbe",
-      "subject": "docs(steward): 2026-11-14 re-stamp NOW.md head after canon sync"
-    },
-    {
-      "date": "2026-11-14T22:21:15Z",
-      "sha": "47c1acd046",
-      "subject": "docs(canon): sync the canon block to v2026.11.14.5 (#112)"
-    }
-  ],
+  "changed_since_last_sync": [],
+  "commits": [],
   "decisions": [
     "2026-10-26 - Solo analysis first; paid conversation after quality and adoption",
     "2026-10-16 - A pilot beta for fans, a December target, one feedback inbox",
     "2026-09-27 - Premier League only, one match, no scroll",
     "2026-09-05 - Publish the pundits that passed",
     "2026-09-04 - Launch by founder override",
-    "2026-08-10 - One documentation hierarchy"
+    "2026-08-10 - One documentation hierarchy",
+    "2026-08-08 - Six minds, not six voices",
+    "2026-08-08 - Prediction and accountability as proof",
+    "2026-08-08 - Launch by evidence, not date",
+    "2026-08-08 - Free pundit choice and billing off",
+    "2026-08-11 - AI-native, player-first product",
+    "2026-08-11 - Three-tab shell",
+    "2026-08-11 - Premier League first, staged personalization",
+    "2026-08-11 - Quiet accountability"
   ],
   "feed": [
     {
@@ -54,7 +48,7 @@
   ],
   "notes": [],
   "open_pulls": [],
-  "previous_sha": "b2a3c5fc6b293e274f06c11deffd721c9723e0fe",
+  "previous_sha": "3fbe8a9fbe79b1623dc83a922d467a0b84e98340",
   "push": {
     "open": false,
     "why": "no match has 4 of 6 AI Pundits (newest: 1 of 6)"
@@ -136,7 +130,7 @@
     "D1": {
       "in_force": false,
       "recorded": false,
-      "status": "pending"
+      "status": "approved"
     },
     "D2": {
       "in_force": false,
@@ -167,8 +161,18 @@
       "in_force": false,
       "recorded": false,
       "status": "pending"
+    },
+    "ORGANIC": {
+      "in_force": false,
+      "recorded": false,
+      "status": "approved"
+    },
+    "RELEASE": {
+      "in_force": false,
+      "recorded": false,
+      "status": "pending"
     }
   },
   "sha": "3fbe8a9fbe79b1623dc83a922d467a0b84e98340",
-  "synced_at": "2026-11-15T01:58:16+00:00"
+  "synced_at": "2026-11-15T21:53:01+00:00"
 }
