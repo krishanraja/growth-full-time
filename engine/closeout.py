@@ -62,8 +62,8 @@ EM_DASH = '\u2014'
 
 def london_today():
     try:
-        from zoneinfo import ZoneInfo
-        return dt.datetime.now(ZoneInfo('Europe/London')).date().isoformat()
+        from .clock import LONDON
+        return dt.datetime.now(LONDON).date().isoformat()
     except Exception:  # noqa: BLE001 - no tz database: UTC is within an hour of London
         return dt.datetime.now(dt.timezone.utc).date().isoformat()
 

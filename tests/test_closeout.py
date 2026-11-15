@@ -49,9 +49,9 @@ North Star check (2026-11-12): holds.
 def repo(root, now=NOW, notes=None):
     root = Path(root)
     (root / 'now-notes').mkdir()
-    (root / 'NOW.md').write_text(now)
+    (root / 'NOW.md').write_text(now, encoding='utf-8')
     for name, text in (notes or {'2026-11-12-proof.md': NOTE}).items():
-        (root / 'now-notes' / name).write_text(text)
+        (root / 'now-notes' / name).write_text(text, encoding='utf-8')
     return root
 
 
@@ -60,8 +60,8 @@ class FoldTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = repo(tmp)
             result = closeout.fold(root, head='b' * 40, day='2026-11-12')
-            text = (root / 'NOW.md').read_text()
-            log = (root / 'docs/history/LOG.md').read_text()
+            text = (root / 'NOW.md').read_text(encoding='utf-8')
+            log = (root / 'docs/history/LOG.md').read_text(encoding='utf-8')
             self.assertEqual(result['folded'], ['now-notes/2026-11-12-proof.md'])
             self.assertEqual(result['problems'], [])
             self.assertFalse((root / 'now-notes/2026-11-12-proof.md').exists())
@@ -87,7 +87,7 @@ class FoldTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = repo(tmp, NOW.replace('2026-11-01', '2026-11-20'))
             closeout.fold(root, day='2026-11-20')
-            self.assertIn('as_of: 2026-11-20', (root / 'NOW.md').read_text())
+            self.assertIn('as_of: 2026-11-20', (root / 'NOW.md').read_text(encoding='utf-8'))
 
     def test_a_note_the_fold_cannot_place_is_refused_and_kept(self):
         bad = {'2026-11-12-bad.md': '# A heading\nStatus: too short\nNorth Star check (2026-11-12): holds. And more.\n',
@@ -96,7 +96,7 @@ class FoldTests(unittest.TestCase):
             root = repo(tmp, notes=bad)
             result = closeout.fold(root, day='2026-11-12')
             self.assertEqual(result['folded'], [])
-            self.assertEqual((root / 'NOW.md').read_text(), NOW)
+            self.assertEqual((root / 'NOW.md').read_text(encoding='utf-8'), NOW)
             self.assertTrue((root / 'now-notes/2026-11-12-bad.md').exists())
             out = io.StringIO()
             with contextlib.redirect_stdout(out):
@@ -113,8 +113,8 @@ class FoldTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = repo(tmp, long_now)
             result = closeout.fold(root, day='2026-11-12')
-            text = (root / 'NOW.md').read_text()
-            log = (root / 'docs/history/LOG.md').read_text()
+            text = (root / 'NOW.md').read_text(encoding='utf-8')
+            log = (root / 'docs/history/LOG.md').read_text(encoding='utf-8')
         self.assertEqual(result['problems'], [])
         self.assertLessEqual(len(text), closeout.NOW_CHARS)
         self.assertIn('- 2026-11-12 A test proved the fold.', text)
@@ -130,7 +130,7 @@ class FoldTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = repo(tmp, now)
             result = closeout.fold(root, day='2026-11-12')
-            text = (root / 'NOW.md').read_text()
+            text = (root / 'NOW.md').read_text(encoding='utf-8')
         self.assertEqual(result['problems'], [])
         where = text.split('## Where it is right now')[1].split('## ')[0]
         changed = text.split('## What changed recently')[1].split('## ')[0]
@@ -141,7 +141,7 @@ class FoldTests(unittest.TestCase):
     def test_the_repository_holds_only_notes_the_fold_can_place(self):
         notes = closeout.read_notes()
         self.assertEqual([p for n in notes for p in n['problems']], [])
-        log = Path(closeout.ROOT, 'docs/history/LOG.md').read_text()
+        log = Path(closeout.ROOT, 'docs/history/LOG.md').read_text(encoding='utf-8')
         self.assertNotIn('\u2014', log)
 
 

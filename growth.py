@@ -99,7 +99,10 @@ UA = {'User-Agent': 'growth-fulltime (+https://github.com/krishanraja/growth-ful
 LOCAL = os.path.join(HERE, 'local')
 
 KINDS = ('daily', 'radar', 'numbers', 'conversion', 'report')
+# 'whatsapp' is a listener sharing a link of their own accord; 'whatsapp_channel' is
+# Full Time's own brand broadcast, which Krish posts by hand (ruling 2 of 27 October).
 PLATFORMS = ('invite', 'whatsapp', 'email', 'tiktok', 'youtube', 'instagram', 'x', 'reddit',
+             'threads', 'facebook', 'whatsapp_channel',
              'linkedin', 'hn', 'producthunt', 'press', 'creator', 'ads', 'fpl', 'site', 'other')
 
 # The six AI Pundits: the product's ids and their public names (docs/01-brand.md).
@@ -217,33 +220,36 @@ EMOJI = re.compile('[\U0001F300-\U0001FAFF\u2600-\u27bf]')
 HASHTAG = re.compile(r'(?<![\w&/])#\w+')
 CURRENCY = re.compile(r'[£$€]\s?\d')
 LIMITS = {'x': 280, 'whatsapp': 700, 'invite': 900, 'instagram': 2200, 'tiktok': 2200, 'youtube': 5000,
-          'reddit': 3000, 'linkedin': 3000}
+          'reddit': 3000, 'linkedin': 3000, 'threads': 500}
 
 # Channels that tell the build story to AI and tech readers under Krish's name
 # may use internal terms and the measured cost per run; fan channels may not.
 BUILD = ('linkedin', 'hn', 'producthunt', 'press')
 # Public posts must say it is AI (01-brand: the machine is visible).
-DISCLOSE = ('tiktok', 'youtube', 'instagram', 'x', 'reddit', 'linkedin', 'hn', 'producthunt')
+DISCLOSE = ('tiktok', 'youtube', 'instagram', 'x', 'reddit', 'threads', 'facebook', 'whatsapp_channel',
+            'linkedin', 'hn', 'producthunt')
 # Briefs, reports, radar notes and product fixes mix notes for Krish with words
 # the public will see. In those, only lines marked as public get the copy rules.
 INTERNAL = ('other', 'site')
 PUBLIC_LINE = re.compile(r'^\s*(?:on[- ]screen|voiceover|vo|caption|cover|copy|headline|title|hook|cta|'
                          r'end card|line)\s*:', re.I)
 
-# Every link to the product carries tracking built from the creative id.
-OWN_LINK = re.compile(r'https?://(?:www\.)?fulltime\.fm[^\s)>\]"\']*', re.I)
-CREATIVE_ID = re.compile(r'^(INV|WA|EM|TT|YT|IG|X|RD|LI|HN|PH|PR|CR|AD|FPL|WEB)_'
+# Every link to the product carries tracking built from the creative id. A bare
+# fulltime.fm counts: X, Threads and Facebook turn it into a link. krish@fulltime.fm does not.
+OWN_LINK = re.compile(r'(?<![@\w.])(?:https?://)?(?:www\.)?fulltime\.fm(?![\w-])[^\s)>\]"\']*', re.I)
+SCHEME = re.compile(r'https?://', re.I)
+CREATIVE_ID = re.compile(r'^(INV|WA|EM|TT|YT|IG|X|RD|TH|FB|WC|LI|HN|PH|PR|CR|AD|FPL|WEB)_'
                          r'(CLASH|PROOF|TRIBE|BUILD|GAME|HABIT)_'
                          r'(CLIP|SHORT|VIDEO|STORY|POST|THREAD|COMMENT|DM|INVITE|EMAIL|PITCH|LAUNCH|NOTE)_'
                          r'C(\d{2,3})_H(\d{2,3})_V(\d{1,2})_(\d{8})$')
 # utm_source per platform code. Personal invites are "beta": the December bar
 # counts testers by that tag (full-time docs/22-vision-and-beta.md).
 SOURCE = {'INV': 'beta', 'WA': 'wa', 'EM': 'email', 'TT': 'tiktok', 'YT': 'youtube', 'IG': 'instagram', 'X': 'x',
-          'RD': 'reddit', 'LI': 'linkedin', 'HN': 'hn', 'PH': 'producthunt', 'PR': 'press', 'CR': 'creator',
-          'AD': 'paid', 'FPL': 'fpl', 'WEB': 'web'}
+          'RD': 'reddit', 'TH': 'threads', 'FB': 'facebook', 'WC': 'whatsapp_channel', 'LI': 'linkedin', 'HN': 'hn',
+          'PH': 'producthunt', 'PR': 'press', 'CR': 'creator', 'AD': 'paid', 'FPL': 'fpl', 'WEB': 'web'}
 PREFIX = {'invite': 'INV', 'whatsapp': 'WA', 'email': 'EM', 'tiktok': 'TT', 'youtube': 'YT', 'instagram': 'IG',
-          'x': 'X', 'reddit': 'RD', 'linkedin': 'LI', 'hn': 'HN', 'producthunt': 'PH', 'press': 'PR',
-          'creator': 'CR', 'ads': 'AD', 'fpl': 'FPL'}
+          'x': 'X', 'reddit': 'RD', 'threads': 'TH', 'facebook': 'FB', 'whatsapp_channel': 'WC', 'linkedin': 'LI',
+          'hn': 'HN', 'producthunt': 'PH', 'press': 'PR', 'creator': 'CR', 'ads': 'AD', 'fpl': 'FPL'}
 
 
 def medium(plat, fmt):
@@ -290,7 +296,7 @@ def head_sha():
     """The commit on full-time's main right now: git first (no rate limit), then the API."""
     try:
         out = subprocess.run(['git', 'ls-remote', f'https://github.com/{REPO}', f'refs/heads/{BRANCH}'],
-                             capture_output=True, text=True, timeout=60)
+                             capture_output=True, text=True, encoding='utf-8', timeout=60)
         sha = (out.stdout.split() or [''])[0]
         if re.fullmatch(r'[0-9a-f]{40}', sha):
             return sha
@@ -381,7 +387,7 @@ def read_rail():
     return out
 
 
-def push_gate(rail):
+def whole_match_gate(rail):
     if rail is None:
         return {'open': False, 'why': 'the rail was not read, so nothing pushes blind'}
     if not rail:
@@ -396,6 +402,39 @@ def push_gate(rail):
     return {'open': False, 'why': f'no match has {RAIL_MIN} of 6 AI Pundits (newest: {top["fill"]} of 6)'}
 
 
+def push_gate(rail, state=None):
+    """'open' is the whole-match gate: four of six. With a state whose ORGANIC is in force,
+    'per_take' says whether a single take may go: true when a rail match has a published show,
+    since the per-take gate (policy.take_gate) asks only for that exact show."""
+    gate = whole_match_gate(rail)
+    if state is not None and policy.organic_in_force(state):
+        gate['per_take'] = any(m.get('pundits') for m in rail or [])
+        if gate['per_take'] and not gate['open']:
+            gate['why'] += ('; only a whole-match push waits for that: under ORGANIC a single take whose exact '
+                            'AI Pundit show is published may go (the per-take gate)')
+    return gate
+
+
+def public_actions(s):
+    """Krish's open actions this public reading can see: the one ruling asked next and the
+    one-off setup steps not yet seen done (engine/actions.py holds the full list)."""
+    from engine import actions, policy as _policy
+    out = []
+    pending = {rid: {'status': r['status'], 'title': t} for (rid, r), t in
+               ((item, load_rulings().get(item[0], {}).get('title', '')) for item in s.get('rulings', {}).items())}
+    ruling = actions._next_ruling(pending)
+    if ruling:
+        out.append(f'- Rule on {ruling} in Control Center: {pending[ruling]["title"].rstrip(".")}.')
+    identities = s.get('brand_identities') or {}
+    seen = {'identity_verified': any(_policy.identity_verified(x, p) for x in identities.values()
+                                     for p in actions.PUSHED)}
+    for entry in actions.load_owner():
+        if entry.get('done_on') or seen.get(entry['done_when']) is True:
+            continue
+        out.append(f'- {entry["text"]} ({entry["minutes"]} min, one-off)')
+    return out or ['- Nothing waits on Krish that this reading can see.']
+
+
 def read_feed():
     xml = http(FEED, accept_json=False)
     items = []
@@ -407,7 +446,7 @@ def read_feed():
 
 
 def load_rulings():
-    return json.loads(Path(HERE, 'rulings.json').read_text())['rulings']
+    return json.loads(Path(HERE, 'rulings.json').read_text(encoding='utf-8'))['rulings']
 
 
 def rulings_state(roadmap, rulings=None):
@@ -425,6 +464,17 @@ def rulings_state(roadmap, rulings=None):
     return out
 
 
+def release_evidence(rulings, decisions_read, sha):
+    """The product release decision as policy.release_open reads it (R43): written only
+    when rulings.json approves RELEASE and its heading is among the decisions this sync
+    read from full-time's log; None otherwise, so nothing is written."""
+    release = (rulings or {}).get('RELEASE') or {}
+    heading = release.get('evidence') or ''
+    if release.get('status') != 'approved' or not heading or heading not in (decisions_read or []):
+        return None
+    return {'verified': True, 'fulltime_sha': sha, 'decision_heading': heading, 'source_path': 'docs/12-roadmap.md'}
+
+
 def state_dir(publish):
     return os.path.join(HERE, 'state') if publish else os.path.join(LOCAL, 'state')
 
@@ -436,7 +486,7 @@ def load_state(published_only=False):
     for d in dirs:
         f = os.path.join(d, 'fulltime.json')
         if os.path.exists(f):
-            state = json.loads(Path(f).read_text())
+            state = json.loads(Path(f).read_text(encoding='utf-8'))
             if not published_only:
                 state['brand_identities'] = policy.load_identities(LOCAL)
             return state
@@ -487,14 +537,20 @@ def sync(publish=False, quiet=False):
     changed = sorted(p for p in canon if p in old and old[p] != canon[p])
     added = sorted(set(paths) - set(old)) if old else []
     removed = sorted(set(old) - set(paths)) if old else []
+    rulings = load_rulings()
+    heads = decisions(texts.get('docs/12-roadmap.md'))
+    ruled = rulings_state(texts.get('docs/12-roadmap.md'), rulings)
     state = {
         'repo': REPO, 'sha': sha, 'synced_at': dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
         'previous_sha': prev.get('sha'), 'canon_from_index': found, 'canon': canon, 'rules': prints,
         'rules_ok': rules_ok, 'changed_since_last_sync': changed, 'canon_added': added, 'canon_removed': removed,
-        'commits': commits, 'open_pulls': pulls, 'decisions': decisions(texts.get('docs/12-roadmap.md'))[:6],
-        'rulings': rulings_state(texts.get('docs/12-roadmap.md')), 'rail': rail, 'push': push_gate(rail),
+        'commits': commits, 'open_pulls': pulls, 'decisions': heads,
+        'rulings': ruled, 'rail': rail, 'push': push_gate(rail, {'rulings': ruled}),
         'feed': feed, 'notes': notes,
     }
+    release = release_evidence(rulings, heads, sha)   # every heading, so newer decisions never close RELEASE
+    if release:
+        state['marketing_release'] = release
     d = state_dir(publish)
     if publish and prev and all(prev.get(k) == state[k] for k in MEANINGFUL):
         # The repository's copy changes only when full-time, the rail or the
@@ -505,7 +561,7 @@ def sync(publish=False, quiet=False):
     os.makedirs(d, exist_ok=True)
     from engine.records import atomic_json
     atomic_json(os.path.join(d, 'fulltime.json'), state)
-    Path(d, 'FULLTIME-NOW.md').write_text(now_md(state))
+    Path(d, 'FULLTIME-NOW.md').write_text(now_md(state), encoding='utf-8')
     if not quiet:
         print(now_md(state))
     return state
@@ -534,8 +590,12 @@ def now_md(s):
         lines += [f'| `{k}` | {v} | {RULES_BASIS.get(k)} |' for k, v in s['rules'].items() if v != RULES_BASIS.get(k)]
         lines += ['']
     push = s['push']
-    lines += ['## Push gate: ' + ('OPEN' if push['open'] else 'HOLD'), '',
+    lines += [('## Whole-match push gate: ' if 'per_take' in push else '## Push gate: ') + ('OPEN' if push['open'] else 'HOLD'), '',
               f'{push["why"][0].upper() + push["why"][1:]}. A push sends fans to a match only when at least {RAIL_MIN} of the six AI Pundits made a show for it (PLAYBOOK.md, "The rail gate").', '']
+    if 'per_take' in push:
+        lines += ['## Per-take gate (ORGANIC): ' + ('OPEN' if push['per_take'] else 'HOLD'), '',
+                  (f'A single take may go when the exact AI Pundit shows it names are published on this rail, read under 26 hours ago. Whole-match promotion still waits for {RAIL_MIN} of 6.'
+                   if push['per_take'] else 'No match on the rail has a published show, so no take passes the per-take gate.'), '']
     lines += ['## The rail at fulltime.fm', '']
     lines += rail_rows(s['rail']) if s['rail'] else ['The rail was not read.' if s['rail'] is None else 'No match has a published show.']
     if s['changed_since_last_sync'] or s['canon_added'] or s['canon_removed']:
@@ -543,12 +603,15 @@ def now_md(s):
         lines += [f'- changed: `{p}`' for p in s['changed_since_last_sync']]
         lines += [f'- newly canon: `{p}`' for p in s['canon_added']]
         lines += [f'- no longer canon: `{p}`' for p in s['canon_removed']]
+    lines += ['', "## Krish's actions", '', 'His matchday and plan answers wait in Control Center; `growth.py actions` '
+              'lists them with the rest. From what this public reading can see:', '']
+    lines += public_actions(s)
     lines += ['', '## Rulings the playbook needs', '', '| Ruling | Here | In full-time\'s decision log | In force |', '|---|---|---|---|']
     titles = {k: v.get('title', '') for k, v in load_rulings().items()}
     for rid, r in s['rulings'].items():
         lines.append(f'| {rid}: {titles.get(rid, "")} | {r["status"]} | {"yes" if r["recorded"] else "no"} | {"yes" if r["in_force"] else "no"} |')
     lines += ['', '## Latest decisions (full-time `docs/12-roadmap.md`)', '']
-    lines += [f'- {d}' for d in s['decisions']] or ['- none read']
+    lines += [f'- {d}' for d in s['decisions'][:6]] or ['- none read']
     lines += ['', '## The Reporter feed', '']
     lines += [f'- {i["date"][:16]}: {i["title"]}' for i in (s['feed'] or [])] or ['- not read' if s['feed'] is None else '- empty']
     lines += ['', '## The canon, in order', '']
@@ -576,12 +639,17 @@ def gates_for(platform, rulings):
     return out
 
 
-def link_problems(url, rail):
-    """A link to Today must name a match whose rail is full enough, and an AI Pundit who made a show for it."""
+def link_problems(url, rail, per_take=()):
+    """A link to Today must name a match whose rail is full enough, and an AI Pundit who made a show for it.
+    `per_take` holds the (drop, AI Pundit) pairs a draft passed the per-take gate for (ORGANIC in
+    force): a link to one of those exact shows needs no four of six."""
     parts = urllib.parse.urlsplit(url)
     if parts.path not in ('', '/'):
         return []
-    q = dict(urllib.parse.parse_qsl(parts.query))
+    pairs = urllib.parse.parse_qsl(parts.query, keep_blank_values=True)
+    if any(sum(1 for k, _ in pairs if k == key) > 1 for key in ('drop', 'pundit')):
+        return [f'the link {url} names drop or pundit more than once (a browser opens the first, so name each once)']
+    q = dict(pairs)
     if rail is None:
         return [f'the link {url} goes to Today, but the rail was not read in the sync (nothing pushes blind)']
     if not rail:
@@ -593,7 +661,7 @@ def link_problems(url, rail):
     out = []
     if pundit and pundit not in match['pundits']:
         out.append(f'the link opens {PUNDITS.get(pundit, pundit)}, who made no show for {match["home"]} v {match["away"]}')
-    if match['fill'] < RAIL_MIN:
+    if match['fill'] < RAIL_MIN and (drop, pundit) not in set(per_take):
         out.append(f'the link sends fans to {match["home"]} v {match["away"]}, where {match["fill"]} of 6 AI Pundits '
                    f'made a show (push only at {RAIL_MIN} of 6: mark it "needs": "RAIL", or link a fuller match)')
     return out
@@ -634,6 +702,11 @@ def problems(item, state=None):
     if needs and needs not in policy.HOLDS:
         out.append(f'needs "{needs}" must be a documented hold code')
     pending = policy.holds(item)
+    # Under ORGANIC a take that passed the per-take gate may link its own published shows.
+    per_take = set()
+    if (platform in policy.BRAND_CHANNELS and policy.organic_in_force(state) and item.get('whole_match') is False
+            and not policy.take_gate(item, state)):
+        per_take = {(item['drop_id'], p) for p in item['pundits']}
     cid = item.get('creative_id')
     if cid:
         m = CREATIVE_ID.match(cid)
@@ -702,19 +775,29 @@ def problems(item, state=None):
         out.append(f'it is {len(text)} characters ({LIMITS[platform]} at most on {platform})')
     if len(full) > 8000:
         out.append('it is over 8,000 characters')
-    for url in OWN_LINK.findall(full):
+    for found in OWN_LINK.findall(full):
+        if not SCHEME.match(found) and platform in INTERNAL:
+            continue   # a note for Krish that names the site is not a link anyone clicks
+        url = found if SCHEME.match(found) else 'https://' + found
         q = dict(re.findall(r'[?&](utm_[a-z]+)=([^&#]*)', url))
+        if not SCHEME.match(found):
+            out.append(f'the link {found} has no https:// (paste the exact link python3 growth.py link prints)')
         if not all(k in q for k in ('utm_source', 'utm_medium', 'utm_campaign', 'utm_content')):
-            out.append(f'the link {url} is not tracked (python3 growth.py link <url> <creative_id>)')
+            out.append(f'the link {found} is not tracked (python3 growth.py link <url> <creative_id>)')
         elif not CREATIVE_ID.match(q['utm_content']):
-            out.append(f'the link {url} carries "{q["utm_content"]}", not a creative id')
+            out.append(f'the link {found} carries "{q["utm_content"]}", not a creative id')
         elif cid and q['utm_content'] != cid:
-            out.append(f'the link {url} is tracked as {q["utm_content"]} but the draft is {cid}')
+            out.append(f'the link {found} is tracked as {q["utm_content"]} but the draft is {cid}')
+        elif not cid and platform in PREFIX:
+            code = CREATIVE_ID.match(q['utm_content']).group(1)
+            if code != PREFIX[platform] and not (platform == 'whatsapp' and code == 'INV'):
+                out.append(f'the link {found} is tracked as {q["utm_content"]}, a {code} creative, but the draft is on '
+                           f'{platform} ({PREFIX[platform]})')
         if platform not in INTERNAL:
             parts = urllib.parse.urlsplit(url)
             if parts.path in ('', '/') and not all(dict(urllib.parse.parse_qsl(parts.query)).get(k) for k in ('drop', 'pundit')):
                 out.append('a show destination must name its exact drop and AI Pundit')
-            link_errors = link_problems(url, state.get('rail'))
+            link_errors = link_problems(url, state.get('rail'), per_take)
             out += [e for e in link_errors if 'RAIL' not in pending or 'made a show (push only' not in e]
     out += score_problems(text, state.get('rail'))
     return out
@@ -782,6 +865,9 @@ def freshness(pack, state, head_fn, fetch_fn):
     """Was this pack written against today's full-time? A list of reasons it was not."""
     if not state:
         return ['no sync on this machine: run python3 growth.py sync first']
+    stale = policy.sync_age(state)
+    if stale:
+        return [stale]
     sha = str(pack.get('fulltime_sha') or '')
     if not sha or not state['sha'].startswith(sha):
         return [f'the pack names full-time {sha or "(none)"} but the last sync read {state["sha"][:10]}: sync, re-read, redraft']
@@ -853,7 +939,7 @@ def store_pack(pack):
     name = f'{pack["pack_date"]}-{pack["kind"]}'
     atomic_json(os.path.join(d, name + '.json'), pack)
     atomic_json(os.path.join(LOCAL, 'outbox', name + '.json'), envelope(pack, receipt))
-    Path(d, name + '.md').write_text(render_md(pack))
+    Path(d, name + '.md').write_text(render_md(pack), encoding='utf-8')
     print(f'stored on this machine: local/packs/{name}.md ({why}). The pack in full:\n')
     print(render_md(pack))
     return receipt
@@ -861,12 +947,12 @@ def store_pack(pack):
 
 def read_packs(days, kind):
     d = os.path.join(LOCAL, 'packs')
-    from zoneinfo import ZoneInfo
-    since = (dt.datetime.now(ZoneInfo('Europe/London')).date() - dt.timedelta(days=days)).isoformat()
+    from engine.clock import LONDON
+    since = (dt.datetime.now(LONDON).date() - dt.timedelta(days=days)).isoformat()
     out = []
     for f in sorted(os.listdir(d) if os.path.isdir(d) else [], reverse=True):
         if f.endswith('.json') and f[:10] >= since:
-            p = json.loads(Path(d, f).read_text())
+            p = json.loads(Path(d, f).read_text(encoding='utf-8'))
             if not kind or p.get('kind') == kind:
                 out.append(p)
     from engine.records import History
@@ -909,7 +995,7 @@ def doctor():
              'read the changed sections in local/state/FULLTIME-NOW.md, then update RULES and RULES_BASIS in growth.py')
     else:
         line(False, 'a sync on this machine', 'run python3 growth.py sync')
-    autos = json.loads(Path(HERE, 'automations.json').read_text())['automations']
+    autos = json.loads(Path(HERE, 'automations.json').read_text(encoding='utf-8'))['automations']
     line(all(os.path.exists(os.path.join(HERE, a['job'])) for a in autos),
          f'automations.json ({len(autos)} automations, every job file present)', 'a job file named in automations.json is missing')
     try:
@@ -951,10 +1037,11 @@ def self_test():
              'score': [3, 1], 'pundits': ['zen', 'gaffer', 'stats', 'doomer', 'banter'], 'fill': 5}]
     on = {'D1': {'in_force': True}, 'D4': {'in_force': True}, 'D5': {'in_force': True}, 'D6': {'in_force': True}, 'D7': {'in_force': True}}
     brand_identities = {p: {'verified': True, 'platform': p, 'account_scope': 'brand',
-                            'source_url': 'https://' + {'youtube':'youtube.com','x':'x.com'}.get(p,p+'.com') + '/example-fixture',
+                            'source_url': 'https://' + {'youtube':'youtube.com','x':'x.com','whatsapp_channel':'whatsapp.com'}.get(p,p+'.com') + '/example-fixture',
                             'verified_at': dt.datetime.now(dt.timezone.utc).isoformat()}
                         for p in policy.BRAND_CHANNELS}
-    st = {'rail': rail, 'rulings': on, 'brand_identities': brand_identities}
+    synced = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat()
+    st = {'rail': rail, 'rulings': on, 'brand_identities': brand_identities, 'synced_at': synced}
     cid = 'TT_CLASH_CLIP_C01_H02_V1_20261019'
     link = tracked(f'https://fulltime.fm/?drop={drop_full}&pundit=doomer', cid)
     t('a tracked link is built from the creative id', link ==
@@ -1087,7 +1174,7 @@ def self_test():
              'docs/21-go-to-market-agent.md': 'g', 'docs/07-marketing.md': 'm', 'NOW.md': 'n',
              'docs/product-state.json': '{}', 'docs/01-brand.md': 'b', 'docs/00-product.md': 'p',
              'docs/09-growth.md': 'gr', 'docs/11-legal.md': 'l'}
-    sst = {'sha': 'a' * 40, 'rules_ok': True, 'canon': {p: digest(files.get(p))[:16] for p in paths}}
+    sst = {'sha': 'a' * 40, 'rules_ok': True, 'canon': {p: digest(files.get(p))[:16] for p in paths}, 'synced_at': synced}
     global RULES_BASIS
     saved = RULES_BASIS
     RULES_BASIS = fingerprints(files)
@@ -1100,6 +1187,8 @@ def self_test():
         t('stale when the pack names another sync', any('last sync' in e for e in freshness({'fulltime_sha': 'bbbbbbb'}, sst, lambda: 'a' * 40, lambda p, s: files.get(p))))
         t('stopped when rules changed', any('rules changed' in e for e in freshness({'fulltime_sha': 'aaaaaaa'}, {**sst, 'rules_ok': False}, lambda: 'a' * 40, lambda p, s: files.get(p))))
         t('stopped with no sync', any('no sync' in e for e in freshness({'fulltime_sha': 'aaaaaaa'}, None, lambda: 'a' * 40, lambda p, s: None)))
+        old = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=27)).isoformat()
+        t('stale when the sync is over 26 hours old', any('26' in e for e in freshness({'fulltime_sha': 'aaaaaaa'}, {**sst, 'synced_at': old}, lambda: 'a' * 40, lambda p, s: files.get(p))))
     finally:
         RULES_BASIS = saved
     t('RULES_BASIS is filled in', all(v != 'FILL' and len(v) == 16 for v in RULES_BASIS.values()))
@@ -1107,18 +1196,43 @@ def self_test():
     import inspect
     t('a publish compares only with the published copy', 'load_state(published_only=publish)' in inspect.getsource(sync))
     rulings = load_rulings()
-    t('rulings.json names D1 to D7', sorted(rulings) == [f'D{i}' for i in range(1, 8)])
+    t('rulings.json names D1 to D7, ORGANIC and RELEASE',
+      sorted(rulings) == sorted([f'D{i}' for i in range(1, 8)] + ['ORGANIC', 'RELEASE']))
+    t('every ruling has the documented fields', all(set(r) == {'title', 'recommendation', 'unlocks', 'requires', 'status',
+                                                               'date', 'words', 'evidence'} for r in rulings.values()))
+    t('every ruling a ruling requires exists', all(q in rulings for r in rulings.values() for q in r.get('requires', [])))
+    t('ORGANIC comes into force only with D1', rulings['ORGANIC'].get('requires') == ['D1'])
     t('every gated platform is a platform', all(p in PLATFORMS for r in rulings.values() for p in r.get('unlocks', [])))
-    changes = Path(HERE, 'CHANGES.md').read_text()
+    t('every brand channel has a creative id code and a utm_source', all(
+        p in PLATFORMS and PREFIX[p] in SOURCE and CREATIVE_ID.match(PREFIX[p] + '_CLASH_POST_C01_H01_V1_20261027')
+        for p in policy.BRAND_CHANNELS))
+    t('the brand WhatsApp Channel is apart from listener sharing',
+      'whatsapp_channel' in policy.BRAND_CHANNELS and 'whatsapp' not in policy.BRAND_CHANNELS)
+    t('policy and growth hold the same rail gate', policy.RAIL_MIN == RAIL_MIN)
+    take = {'platform': 'tiktok', 'creative_id': cid, 'account_scope': 'brand', 'identity_ref': 'tiktok',
+            'drop_id': drop_thin, 'pundits': ['zen'], 'whole_match': False, 'holds': [],
+            'text': 'The Reporter, an AI Pundit, on Leeds United 1-1 Manchester United: '
+                    + tracked(f'https://fulltime.fm/?drop={drop_thin}&pundit=zen', cid)}
+    organic = {**st, 'rulings': {**on, 'ORGANIC': {'in_force': True}}}
+    t('ORGANIC in force: a published take passes with no RELEASE or RAIL hold', check_pack({**good, 'items': [take]}, organic) == [])
+    t('ORGANIC not in force: the same take still waits for RELEASE and RAIL',
+      any('RELEASE' in e for e in check_pack({**good, 'items': [take]}, {**st, 'rail': [rail[0]]})))
+    t('ORGANIC in force: a take on an AI Pundit with no show is held for RAIL',
+      any('per-take gate' in e for e in check_pack({**good, 'items': [{**take, 'pundits': ['gaffer']}]}, organic)))
+    t('ORGANIC in force: a whole-match post still needs four of six',
+      any('whole-match' in e for e in check_pack({**good, 'items': [{**take, 'whole_match': True}]}, organic)))
+    t('ORGANIC in force: a take that does not say whole_match is held, never read as per-take',
+      any('whole_match' in e for e in check_pack({**good, 'items': [{k: v for k, v in take.items() if k != 'whole_match'}]}, organic)))
+    changes = Path(HERE, 'CHANGES.md').read_text(encoding='utf-8')
     for rid, r in rulings.items():
         t(f'{rid} is pending, approved or declined', r.get('status') in ('pending', 'approved', 'declined'))
         if r.get('status') == 'approved':
             t(f'{rid} approved names its decision-log heading', bool(r.get('evidence')))
             t(f'{rid} approved has Krish\'s words in CHANGES.md', rid in changes)
-    agents = Path(HERE, 'AGENTS.md').read_text()
-    autos = json.loads(Path(HERE, 'automations.json').read_text())['automations']
+    agents = Path(HERE, 'AGENTS.md').read_text(encoding='utf-8')
+    autos = json.loads(Path(HERE, 'automations.json').read_text(encoding='utf-8'))['automations']
     for f in sorted(os.listdir(os.path.join(HERE, 'jobs'))):
-        body = Path(HERE, 'jobs', f).read_text()
+        body = Path(HERE, 'jobs', f).read_text(encoding='utf-8')
         m = re.search(r'Kind `(\w+)`', body)
         t(f'jobs/{f} names a kind', bool(m) and m.group(1) in KINDS or f == 'sync.md')
         t(f'jobs/{f} is on the schedule in AGENTS.md', f'jobs/{f}' in agents)
@@ -1129,14 +1243,14 @@ def self_test():
         t(f'automation "{au["name"]}" never asks to post', not re.search(r'\b(post|publish|send|upload|boost)\b', au['prompt'], re.I))
     t('every job file has an automation', {a['job'] for a in autos} == {f'jobs/{f}' for f in os.listdir(os.path.join(HERE, 'jobs'))})
     t('every automation ends with the Control Center loop', all('python3 growth.py cc ' in au['prompt'] for au in autos))
-    morning = Path(HERE, 'jobs', 'morning.md').read_text()
+    morning = Path(HERE, 'jobs', 'morning.md').read_text(encoding='utf-8')
     t("the morning job pulls Krish's instruction first and acks it by hand (protocol 1.20.0)",
       'growth.py cc ack' in morning and re.search(r'^2\. Pull Krish.s instruction[^\n]*growth\.py cc instruction', morning, re.M)
       is not None and morning.find('growth.py cc instruction') < morning.find('End with `python3 growth.py cc morning'))
     from engine import reporting as protocol
-    example = json.loads(Path(HERE, 'docs', 'control-center', 'engine-report.example.json').read_text())
+    example = json.loads(Path(HERE, 'docs', 'control-center', 'engine-report.example.json').read_text(encoding='utf-8'))
     t('the protocol digest reproduces the worked example', protocol.seal(example)['payload_sha256'] == example['payload_sha256'])
-    flow = Path(HERE, '.github', 'workflows', 'control-center.yml').read_text()
+    flow = Path(HERE, '.github', 'workflows', 'control-center.yml').read_text(encoding='utf-8')
     t('the dispatch workflow wakes on cc-growth-directive with read-only contents',
       'types: [cc-growth-directive]' in flow and 'contents: read' in flow and 'upload-artifact' not in flow)
     for f in ('PLAYBOOK.md', 'BROWSER.md', 'CHANGES.md', 'COPY.md', 'rulings.json', 'knowledge/README.md',
@@ -1146,12 +1260,37 @@ def self_test():
     from engine import closeout
     t('every closeout note in now-notes/ is one the fold can place (engine/closeout.py)',
       not [problem for note in closeout.read_notes(Path(HERE)) for problem in note['problems']])
-    sync_flow = Path(HERE, '.github', 'workflows', 'sync.yml').read_text()
+    sync_flow = Path(HERE, '.github', 'workflows', 'sync.yml').read_text(encoding='utf-8')
     t('the hourly sync commits as automation, so NOW.md is never marked unreconciled by it',
       'git commit -m "chore(heartbeat): sync full-time' in sync_flow)
-    ignored = Path(HERE, '.gitignore').read_text()
+    ignored = Path(HERE, '.gitignore').read_text(encoding='utf-8')
     t('local/ is never committed (the repository is public)', re.search(r'^/?local/?$', ignored, re.M) is not None)
     print(f'growth-fulltime self-test passed: {n} checks')
+
+
+ENGINE_COMMANDS = ('run', 'history', 'creative', 'experiment', 'metrics', 'assets', 'export', 'cc',
+                   'spec', 'formats', 'pack', 'buffer', 'library', 'session', 'dispatch', 'audience', 'ga4',
+                   'fixtures', 'actions', 'invariants')
+
+
+ENGINE_HELP = """engine commands (python3 growth.py <command> --help for each):
+  run morning|weekly       the daily batch or weekly review, saved locally
+  cc morning|weekly|dispatch|instruction|ack   the Control Center loop: report, read Krish's decisions
+  actions [--all]          Krish's actions today and the engine's own to-do
+  fixtures fetch|import|show   this London week's Premier League fixtures
+  spec check|digest|compile|propose   the weekly plan, G1
+  formats list|readiness|lock  the formats, and readiness computed from verdicts
+  pack check|propose       a matchday pack, G2
+  buffer query|receipts    read-only Buffer: Krish's permalinks close a G2
+  assets fetch|render      a published edition's audio, and a take clip render
+  library name|reconcile|canva|stamp|bundle|assemble   the Growth Build library
+  session pack|minutes     the 36 KB pack a fresh session starts from
+  dispatch CARD            a Codex task card, behind the allowance guard
+  audience actions|plan|followers   brand-profile actions within platform rules
+  invariants check         every invariant in invariants/registry.json
+  ga4 doctor|report|authorize   the fallback Google Analytics reader
+  history, creative, experiment, metrics, export, standards   the ledger and creative system
+None of these posts, sends, schedules or spends."""
 
 
 def main():
@@ -1161,10 +1300,12 @@ def main():
     if len(sys.argv) > 1 and sys.argv[1] == 'closeout':
         from engine.closeout import command as closeout_command
         raise SystemExit(closeout_command(sys.argv[2:]))
-    if len(sys.argv) > 1 and sys.argv[1] in ('run', 'history', 'creative', 'experiment', 'metrics', 'assets', 'export', 'cc'):
+    if len(sys.argv) > 1 and sys.argv[1] in ENGINE_COMMANDS:
         from engine.cli import main as operations_main
         return operations_main(sys.argv[1:], sys.modules[__name__])
-    ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
+    ap = argparse.ArgumentParser(
+        description=__doc__.split('\n')[0], formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=ENGINE_HELP)
     ap.add_argument('--self-test', action='store_true')
     sub = ap.add_subparsers(dest='cmd')
     sy = sub.add_parser('sync'); sy.add_argument('--publish', action='store_true'); sy.add_argument('--quiet', action='store_true')
@@ -1198,7 +1339,7 @@ def main():
     if a.cmd == 'rail':
         rail = read_rail()
         print('\n'.join(rail_rows(rail)) if rail else 'No match has a published show.')
-        gate = push_gate(rail)
+        gate = push_gate(rail, load_state() or {})
         print(f'\npush gate: {"OPEN" if gate["open"] else "HOLD"} ({gate["why"]})')
         return
     if a.cmd == 'link':
@@ -1208,7 +1349,7 @@ def main():
             sys.exit(str(e))
         return
     if a.cmd in ('check', 'post'):
-        pack = json.loads(Path(a.file).read_text())
+        pack = json.loads(Path(a.file).read_text(encoding='utf-8'))
         st = load_state()
         errs = check_pack(pack, st)
         try:

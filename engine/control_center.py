@@ -6,7 +6,12 @@ Each run journals a started attempt before reading any source, pulls the
 directive, does the engine's own work, reports with an Idempotency-Key and
 reads the digest back, reads Krish's decisions, and journals one terminal
 attempt. Nothing here sends, posts, publishes or spends: an approval only
-records that Krish said yes to exactly that payload.
+records that Krish said yes to exactly that payload, or to his amended version
+once its amended_sha256 checks. Full Time is handcrafted (ruling 3 of 27
+October): an approved go-live becomes a recorded instruction for Krish, in
+local/control-center/instructions.jsonl, never an action. Any protocol 1.x is
+taken from Control Center; a directive or decision declaring another major
+version is refused.
 
 The bearer comes from CONTROL_CENTER_ENGINE_TOKEN or the ignored file
 local/control-center/token. It is never printed, logged or written.
@@ -29,8 +34,8 @@ import urllib.parse
 import urllib.request
 import uuid
 
-from . import activation, ai_answers, credits, engine_state, policy, reporting
-from .records import History, atomic_json
+from . import activation, ai_answers, credits, engine_state, gates, policy, reporting
+from .records import History, atomic_json, instant
 
 DEFAULT_URL = 'https://controlcenter.krishraja.com'
 TOKEN_ENV = 'CONTROL_CENTER_ENGINE_TOKEN'
@@ -57,6 +62,7 @@ MESSAGES = {
     'ack_unchanged': 'That is the step it already holds, with the same line, so it would change nothing. To update '
                      'what Krish sees, say what is new in a new line. Nothing was recorded.',
     'bad_evidence_url': 'Evidence is an https URL. Nothing was recorded.',
+    'protocol_version_unsupported': 'Control Center sent another major protocol version than 1. Nothing was taken.',
 }
 
 
@@ -105,6 +111,16 @@ def base_url(value=None):
 
 STATUS_CODES = {400: 'bad_request', 401: 'unauthorized', 403: 'forbidden', 404: 'not_found',
                 409: 'conflict', 413: 'report_too_large', 429: 'rate_limited'}
+
+
+VERSION_REFUSED = 'protocol_version_unsupported'
+BY_HAND = {'post': 'post it yourself', 'send': 'send it yourself', 'spend': 'spend it yourself'}
+
+
+def version_supported(value):
+    """Any 1.x is taken: within 1.x Control Center only adds. Another major version,
+    or a version that is not one, is refused. An undeclared version is not checked."""
+    return value is None or (reporting.version_numbers(value) or (None,))[0] == 1
 
 
 class Client:
@@ -174,6 +190,9 @@ class Client:
     def directive(self):
         status, payload = self._call('GET', 'directive')
         if status == 200 and isinstance(payload, dict) and isinstance(payload.get('directive'), dict):
+            if not (version_supported(payload.get('schema_version'))
+                    and version_supported(payload['directive'].get('schema_version'))):
+                raise ControlCenterError(VERSION_REFUSED, status)
             return payload
         raise self._refuse(status, payload) if status >= 300 else ControlCenterError('bad_response', status)
 
@@ -192,6 +211,8 @@ class Client:
         query = '?since=' + urllib.parse.quote(since, safe='') if since else ''
         status, payload = self._call('GET', 'decisions' + query)
         if status == 200 and isinstance(payload, dict) and isinstance(payload.get('decisions'), list):
+            if not version_supported(payload.get('schema_version')):
+                raise ControlCenterError(VERSION_REFUSED, status)
             return [d for d in payload['decisions'] if isinstance(d, dict)]
         raise self._refuse(status, payload) if status >= 300 else ControlCenterError('bad_response', status)
 
@@ -242,21 +263,145 @@ class Client:
                 'replayed': bool(payload.get('replayed')), 'readback': True, 'report': body}
 
 
+def amended_digest(decision):
+    """His version's digest, as Control Center computes amended_sha256: the canonical
+    JSON of exactly {amount_usd, exact_payload}, each null when absent."""
+    return reporting.canonical_sha256({'amount_usd': decision.get('amount_usd'),
+                                       'exact_payload': decision.get('exact_payload')})
+
+
+def handcrafted_instruction(proposal, approved):
+    """Handcrafted (ruling 3): what Krish does by hand with an approved go-live. It is
+    a record for him, never an action: the engine does not post, send or spend."""
+    wall, channel = proposal.get('wall'), proposal.get('channel')
+    amount = approved.get('amount_usd')
+    line = (f'Approved {proposal["proposal_id"]}: {BY_HAND.get(wall, "carry it out yourself")}'
+            + (f' on {channel}' if channel else '')
+            + (f', {amount} USD' if amount is not None else '')
+            + (', using your amended version' if approved['amended'] else ', exactly as approved')
+            + f' (sha256 {approved["sha256"][:12]}). The engine does not post, send or spend.')
+    return {'proposal_id': proposal['proposal_id'], 'stage': approved['stage'], 'wall': wall,
+            'channel': channel, 'amount_usd': amount, 'sha256': approved['sha256'],
+            'amended': approved['amended'], 'by': 'krish', 'line': line}
+
+
 def classify(decisions, proposals):
-    """His yes counts only on the payload it was made on. The engine still never acts
-    on one by sending or posting; a ruling is recorded by an interactive session."""
-    current = {p['proposal_id']: p['payload_sha256'] for p in proposals}
-    out = {'approved_current': [], 'approved_changed': [], 'declined': [], 'done': [], 'not_in_report': []}
+    """His yes counts only on the payload it was made on (payload_sha256). When he amended
+    it, amended_sha256 is recomputed from his version; on a match his words and amount
+    are what he approved, never the engine's, and on a mismatch the decision is unverified
+    and counts for nothing. A decision declaring a protocol major other than 1 is refused.
+    The engine still never acts on a yes by sending, posting or spending: an approved
+    go-live becomes an instruction for Krish, and a ruling is recorded by an
+    interactive session. `answered` maps each proposal he answered to the digest he
+    answered it on, with his decision and any version of his, for the history."""
+    current = {p['proposal_id']: p for p in proposals}
+    out = {'approved_current': [], 'approved_amended': [], 'approved_changed': [], 'amended_unverified': [],
+           'declined': [], 'done': [], 'not_in_report': [], 'refused': [], 'approved': {}, 'instructions': [],
+           'answered': {}}
+
+    def answer(pid, decision, sha, verified=True):
+        row = {'payload_sha256': sha, 'decision': decision.get('decision'), 'amended': decision.get('amended') is True,
+               'verified': verified, 'decided_at': decision.get('decided_at')}
+        if row['amended']:
+            row.update({key: decision.get(key) for key in ('exact_payload', 'amount_usd', 'amended_sha256')})
+        out['answered'][pid] = row
+
     for decision in decisions:
         pid = decision.get('proposal_id')
-        if pid not in current:
+        if not version_supported(decision.get('schema_version')):
+            out['refused'].append({'proposal_id': pid, 'code': VERSION_REFUSED})
+            continue
+        if not isinstance(pid, str) or pid not in current:
             out['not_in_report'].append(pid)
-        elif decision.get('decision') == 'approved':
-            same = decision.get('payload_sha256') == current[pid]
-            out['approved_current' if same else 'approved_changed'].append(pid)
-        elif decision.get('decision') in ('declined', 'done'):
-            out[decision['decision']].append(pid)
+            continue
+        proposal, verdict = current[pid], decision.get('decision')
+        if verdict in ('declined', 'done'):
+            out[verdict].append(pid)
+            answer(pid, decision, decision.get('payload_sha256'))
+            continue
+        if verdict != 'approved':
+            continue
+        amended = decision.get('amended') is True
+        if amended:
+            try:
+                verified = decision.get('amended_sha256') == amended_digest(decision)
+            except ValueError:
+                verified = False
+            if not verified:
+                out['amended_unverified'].append(pid)
+                answer(pid, decision, decision.get('payload_sha256'), verified=False)
+                continue
+        if decision.get('payload_sha256') != proposal['payload_sha256']:
+            out['approved_changed'].append(pid)
+            continue
+        answer(pid, decision, proposal['payload_sha256'])
+        source = decision if amended else proposal
+        approved = {'amended': amended, 'stage': proposal.get('stage') or decision.get('stage'),
+                    'exact_payload': source.get('exact_payload'), 'amount_usd': source.get('amount_usd'),
+                    'sha256': decision['amended_sha256'] if amended else proposal['payload_sha256']}
+        out['approved_amended' if amended else 'approved_current'].append(pid)
+        out['approved'][pid] = approved
+        if approved['stage'] == 'go_live' or proposal.get('wall') in reporting.GO_LIVE_WALLS:
+            out['instructions'].append(handcrafted_instruction(proposal, approved))
     return out
+
+
+def _jsonl(path):
+    """The object rows of a local JSON-lines file; a line that cannot be read is skipped."""
+    rows = []
+    if Path(path).is_file():
+        for line in Path(path).read_text(encoding='utf-8').splitlines():
+            try:
+                entry = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(entry, dict):
+                rows.append(entry)
+    return rows
+
+
+def _append(path, rows):
+    if rows:
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        with Path(path).open('a', encoding='utf-8', newline='\n') as handle:
+            for row in rows:
+                handle.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + '\n')
+
+
+ANSWERS = Path('control-center') / 'decisions.jsonl'
+
+
+def record_answers(local, decided, at):
+    """Append each answer Krish gave (approved, declined, done, with his version when he
+    amended) once, by proposal, digest, decision and time, to the ignored
+    local/control-center/decisions.jsonl: his history of declines and amendments, and
+    what later runs know he answered. Returns how many were new."""
+    path = Path(local) / ANSWERS
+    key = lambda row: (row.get('proposal_id'), row.get('payload_sha256'), row.get('decision'), row.get('decided_at'))
+    seen = {key(row) for row in _jsonl(path)}
+    new = []
+    for pid, row in sorted(((decided or {}).get('answered') or {}).items()):
+        entry = {**row, 'proposal_id': pid, 'read_at': at}
+        if key(entry) not in seen:
+            seen.add(key(entry))
+            new.append(entry)
+    _append(path, new)
+    return len(new)
+
+
+def record_instructions(local, instructions, at):
+    """Append each new instruction once (by proposal and digest) to the ignored
+    local/control-center/instructions.jsonl. Returns how many were new."""
+    path = Path(local) / 'control-center' / 'instructions.jsonl'
+    seen = {(entry.get('proposal_id'), entry.get('sha256')) for entry in _jsonl(path)}
+    new = []
+    for item in instructions or []:
+        key = (item.get('proposal_id'), item.get('sha256'))
+        if key not in seen:
+            seen.add(key)
+            new.append({**item, 'recorded_at': at})
+    _append(path, new)
+    return len(new)
 
 
 def execute(client, command, run_id, work, since):
@@ -321,6 +466,91 @@ def execute(client, command, run_id, work, since):
 # ---------------------------------------------------------------------------
 # The engine's own work for each entry point.
 # ---------------------------------------------------------------------------
+def measurement_lines(local, today, rows=None, directive=None):
+    """The North Star readings and Google Analytics landings, as activity lines for
+    Control Center. They stay out of the objectives until Control Center registers
+    the new keys (briefs/2026-10-27-control-center-measurement.md), and out of the
+    printed summary, because the runner's log is public. Landings come from Control
+    Center itself when its directive carries ga4_landings (Krish, 2026-10-27: "just
+    get google analytics data from control center"), else from local/ga4/."""
+    from . import attribution
+    lines = []
+    try:
+        for row in attribution.objectives(rows or [], today):
+            value = 'missing' if row['value'] is None else f'{row["value"]} people'
+            lines.append(f'North Star reading, {row["key"]}: {value}. {row["reason"] or ""}'.strip())
+    except ValueError as error:
+        lines.append(f'North Star reading refused: {error}')
+    sent = ((directive or {}).get('directive') or {}).get('ga4_landings')
+    path = Path(local) / 'ga4' / 'landings-latest.json'
+    if sent is None and not path.is_file():
+        return lines + ['Google Analytics: Control Center sent no landings this run, and none were saved '
+                        'locally (docs/GA4-ACCESS.md).']
+    source = 'from Control Center' if sent is not None else 'saved locally'
+    try:
+        export = sent if sent is not None else json.loads(path.read_text(encoding='utf-8'))
+        landings = attribution.by_creative(export)
+    except (ValueError, OSError, KeyError, TypeError) as error:
+        return lines + [f'Google Analytics: the export {source} was refused ({str(error)[:160]}).']
+    tagged = sum(v['new_users'] for v in landings.values())
+    top = sorted(landings.items(), key=lambda kv: (-kv[1]['new_users'], kv[0]))[:3]
+    best = '; most: ' + ', '.join(f'{cid} {v["new_users"]}' for cid, v in top) if top else ''
+    return lines + [f'Google Analytics ({source}), {export["window_start"]} to {export["window_end"]}: {tagged} new web '
+                    f'users from {len(landings)} tagged creatives and {landings.untagged["new_users"]} from '
+                    f'untagged links{best}. Web landings on fulltime.fm, never listeners.']
+
+
+LISTING_FRESH = dt.timedelta(days=7)
+LISTING_SKEW = dt.timedelta(minutes=15)    # this machine's clock against the session that read the listing
+
+
+def library_check(local, moment=None):
+    """The weekly Growth Build reconcile (docs/ENGINE-V2.md, section 2a, rule 7): a
+    listing a Claude session read back from Drive, against INDEX.csv, both under
+    local/library/. The listing document says when it was read ({"read_at": RFC 3339,
+    "listing": [...]}), and only a read from the last seven days reconciles this week:
+    a missing, undated or older listing is a LIBRARY hold, since unknown is never clean.
+    Returns (activity line, holds)."""
+    from . import library
+    moment = moment or reporting.utc_now()
+    folder = Path(local) / 'library'
+    listing, index = folder / 'listing.json', folder / 'INDEX.csv'
+
+    def unreconciled(why):
+        return (f'Growth Build library: not reconciled this week ({why}).',
+                [('LIBRARY', f'The library was not reconciled this week: {why}.')])
+
+    if not listing.is_file():
+        return unreconciled('no listing was read back from Drive into local/library/listing.json')
+    if not index.is_file():
+        return unreconciled('local/library/INDEX.csv is missing')
+    try:
+        document = json.loads(listing.read_text(encoding='utf-8'))
+        found = document.get('listing') if isinstance(document, dict) else document
+        rows = library.read_index(index.read_text(encoding='utf-8'))
+    except (ValueError, OSError) as error:
+        return f'Growth Build library: the listing or index was refused ({str(error)[:160]}).', [
+            ('LIBRARY', 'The weekly reconcile could not read its listing or index.')]
+    read_at = document.get('read_at') if isinstance(document, dict) else None
+    try:
+        read = instant(read_at)
+    except ValueError:
+        return unreconciled('the listing does not say when it was read (read_at, an RFC 3339 time)')
+    if read > moment + LISTING_SKEW:
+        return unreconciled(f'the listing says it was read at {read_at}, which is in the future')
+    if moment - read > LISTING_FRESH:
+        return unreconciled(f'the newest listing was read at {read_at}, more than 7 days ago')
+    try:
+        result = library.reconcile(found, rows)
+    except ValueError as error:
+        return f'Growth Build library: the listing or index was refused ({str(error)[:160]}).', [
+            ('LIBRARY', 'The weekly reconcile could not read its listing or index.')]
+    held = library.hold(result)
+    if held is None:
+        return 'Growth Build library: reconciled clean, nothing outside the tree, misnamed or duplicated.', []
+    return 'Growth Build library: ' + held['detail'], [(held['code'], held['detail'])]
+
+
 def directive_line(directive, dispatched=None, held=False):
     """The directive in the report's words. Krish's instruction, when there is one, comes first (by id,
     never his words); Control Center's push follows."""
@@ -340,6 +570,16 @@ def held_line(sources):
     named = ' and '.join({'control_center': 'Control Center', 'activation.json': 'activation.json'}[x] for x in sources)
     return (f'Held by Krish ({named} says held): no proposals and no asks on his list; one NOT_READY hold '
             'names what would make it ready. The bearer stays valid.')
+
+
+def action_lines(growth, today, state, directive):
+    """Krish's actions today and the engine's to-do (engine/actions.py), as activity
+    lines. A failure to compute them is said plainly and never stops the report."""
+    from . import actions
+    try:
+        return actions.lines(actions.compute(growth.LOCAL, today, state, growth.load_rulings(), directive))
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        return [f'Your actions today could not be worked out: {type(error).__name__}.']
 
 
 def max_actions(directive):
@@ -390,10 +630,16 @@ def workspace_work(growth, mode, report_mode, offline, observations, require_exi
                             'calls.']
         held = reporting.held_creatives(saved['creatives'])
         activity.append(f'{len(held)} creatives are held in private history with their codes.')
+        library_holds = []
         if mode == 'weekly':
             activity.append('Weekly review over the seven complete London days ending yesterday: '
                             + record['native_weekly_review']['findings']['measurement'])
+            line, library_holds = library_check(growth.LOCAL)
+            activity.append(line)
         activity += head
+        activity += measurement_lines(growth.LOCAL, today, saved['observations'], directive)
+        if not is_held:     # held means no asks of him (Ruling, Krish, 2026-10-29), so no action list either
+            activity += action_lines(growth, today, state, directive)
         degraded = [] if record.get('rail') is not None else ['The live rail was not read; fulltime.fm did not answer.']
         start = reporting.week_window(today)[0].isoformat()
         objectives_list = reporting.objectives(today, saved['observations'], saved['runs'])
@@ -421,7 +667,7 @@ def workspace_work(growth, mode, report_mode, offline, observations, require_exi
             identity_known=identity_known,
             kill_list=record['native_weekly_review']['kill_list'] if mode == 'weekly' else (),
             degraded=degraded, max_actions=max_actions(directive), credits_spent=guard.credits_spent(),
-            engine_state=fields)
+            engine_state=fields, extra_holds=library_holds)
         return report, notes
     return work
 
@@ -475,7 +721,7 @@ def runner_work(growth, report_mode, dispatched=None, run_id=None):
                 degraded.append('The source snapshot has no valid capture time.')
             if state.get('rail') is None:
                 degraded.append('The live rail was not read; fulltime.fm did not answer.')
-        state['push'] = state.get('push') or growth.push_gate(state.get('rail'))
+        state['push'] = state.get('push') or growth.push_gate(state.get('rail'), state)
         today = reporting.london_today()
         start, end = reporting.week_window(today)[:2]
         measures = scorecard([], start.isoformat(), end.isoformat())
@@ -486,6 +732,9 @@ def runner_work(growth, report_mode, dispatched=None, run_id=None):
         activity.append('Private history, held creatives, brand identity proof and approved aggregates stay in '
                         'the persistent workspace; this runner reports only what it can see.')
         activity += head
+        activity += measurement_lines(growth.LOCAL, today, directive=directive)
+        if not is_held:     # held means no asks of him (Ruling, Krish, 2026-10-29), so no action list either
+            activity += action_lines(growth, today, state, directive)
         today_id = run_id or reporting.run_id_for(today, 'dispatch')
         objectives_list = reporting.objectives(today, workspace=False)
         acks = (engine_state.runner_acks(instr, sources if is_held else [], reporting.utc_now(), run_url)
@@ -595,9 +844,22 @@ def main(args, growth):
                           workspace_work(growth, args.target, report_mode, args.offline, args.observations,
                                          args.require_existing_history), since)
     summary['mode'] = report_mode
+    decided = summary.get('decisions')
+    instructions = (decided or {}).get('instructions') or []
+    # Only a live workspace run takes his decisions: it keeps his answers (his declines and
+    # amendments are the bar), records an approved go-live as an instruction for him, and
+    # settles any queued G1 or G2 gate he answered. A synthetic run or a dispatch leaves them.
+    if report_mode == 'live' and args.target != 'dispatch' and decided is not None and summary.get('decisions_read_at'):
+        record_answers(growth.LOCAL, decided, summary['decisions_read_at'])
+        record_instructions(growth.LOCAL, instructions, summary['decisions_read_at'])
+        settled = gates.settle(growth.LOCAL, decided)
+        if settled:
+            summary['verdicts_recorded'] = len(settled)
     summary['decisions_read_at'] = summary.get('decisions_read_at') or previous
     atomic_json(ledger, summary)
     shown = dict(summary)
     if shown.get('decisions'):
         shown['decisions'] = {k: len(v) for k, v in shown['decisions'].items()}
+    if instructions:
+        shown['instructions'] = [x['line'] for x in instructions]
     return shown, 0 if summary['status'] == 'succeeded' else 1

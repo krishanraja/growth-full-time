@@ -400,7 +400,7 @@ def obsessions(root=ROOT):
         if line:
             out.append({'line': line, 'since': since})
     agents = _text(root, 'AGENTS.md')
-    autonomy = re.search(r'^## Autonomy \(Ruling, Krish, (\d{4}-\d{2}-\d{2})\)\s*\n+Krish: "([^"]+)"', agents, re.M)
+    autonomy = re.search(r'^## Autonomy \(Ruling, Krish, (\d{4}-\d{2}-\d{2})[^)\n]*\)\s*\n+Krish: "([^"]+)"', agents, re.M)
     if autonomy:
         line = f'Krish: "{plain(autonomy.group(2))}"'
         if line_ok(line, STATE_LINE_MAX):

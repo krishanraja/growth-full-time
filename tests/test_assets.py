@@ -59,7 +59,7 @@ class AssetTests(unittest.TestCase):
         self.assertEqual(receipt['publication_status'],'private_preview')
         self.assertEqual(receipt['generated_media_calls'],0)
         self.assertTrue(Path(receipt['thumbnail']).exists())
-        self.assertIn('00:00:03,000 --> 00:00:06,000',Path(receipt['captions']).read_text())
+        self.assertIn('00:00:03,000 --> 00:00:06,000',Path(receipt['captions']).read_text(encoding='utf-8'))
         self.assertTrue(render(self.api,path)['reused'])
         self.assertTrue(any(x['codec_type']=='audio' for x in probe(receipt['video'])['streams']))
 

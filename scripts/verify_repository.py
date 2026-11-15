@@ -40,9 +40,55 @@ def source_errors(root=ROOT, manifest=SOURCES):
     return errors
 
 
+LIMITS = {'crew/*/card.md': 3 * 1024, 'crew/*/lens.md': 1024, 'tasks/*.json': 6 * 1024, 'docs/ENGINE.md': 6 * 1024}
+
+
+def v2_errors(root=ROOT):
+    """Engine v2 contracts that need no imports: size budgets, data-only folders, live pointers and CI hardening."""
+    root = Path(root)
+    errors = []
+    for pattern, limit in LIMITS.items():
+        for path in sorted(root.glob(pattern)):
+            size = len(path.read_bytes().replace(b'\r\n', b'\n'))   # a Windows checkout adds CR; budgets count LF
+            if size > limit:
+                errors.append(f'{path.relative_to(root)}: {size} bytes, over the {limit}-byte budget')
+    for folder in ('specs', 'formats'):
+        for path in sorted((root / folder).rglob('*')):
+            if path.is_file() and path.suffix not in ('.json', '.md'):
+                errors.append(f'{path.relative_to(root)}: {folder}/ holds data only; per-run code is refused')
+    front = re.match(r'---\n(.*?)\n---\n', (root / 'NOW.md').read_text(encoding='utf-8'), re.S)
+    if not front:
+        errors.append('NOW.md: missing front matter')
+    else:
+        for key in ('state_doc', 'history_log'):
+            found = re.search(rf'^{key}: (\S+)$', front.group(1), re.M)
+            if found and not (root / found.group(1)).exists():
+                errors.append(f'NOW.md: {key} points to {found.group(1)}, which does not exist')
+    handovers = sorted(p.name for p in root.glob('HANDOVER-*.md'))
+    for job in json.loads((root / 'automations.json').read_text(encoding='utf-8'))['automations']:
+        named = re.findall(r'HANDOVER-[0-9-]+[A-Z-]*\.md', job['prompt'])
+        if named and handovers and named[-1] != handovers[-1]:
+            errors.append(f'automations.json: "{job["name"]}" names {named[-1]}, not the newest handover')
+    check = (root / '.github/workflows/check.yml').read_text(encoding='utf-8')
+    for needle, reason in (('timeout-minutes:', 'CI jobs need a timeout (a hung apt step ran for over 20 minutes)'),
+                           ('runs-on: ubuntu-24.04', 'the renderer check is pinned to Ubuntu 24.04'),
+                           ('https://archive.ubuntu.com/ubuntu', 'renderer packages come from the HTTPS mirror')):
+        if needle not in check:
+            errors.append('.github/workflows/check.yml: ' + reason)
+    loop = (root / '.github/workflows/control-center.yml').read_text(encoding='utf-8')
+    for used in re.findall(r'uses:\s*google-github-actions/auth@(\S+)', loop):
+        if not re.fullmatch(r'[0-9a-f]{40}', used):
+            errors.append('.github/workflows/control-center.yml: pin google-github-actions/auth to a full commit SHA')
+    for needle, reason in (('upload-artifact', 'the loop uploads nothing; GA4 exports stay on the runner'),
+                           ('credentials_json', 'Google access is keyless (docs/GA4-ACCESS.md, route A); no key file')):
+        if needle in loop:
+            errors.append('.github/workflows/control-center.yml: ' + reason)
+    return errors
+
+
 def main():
     paths = subprocess.check_output(['git', 'ls-files', '--cached', '--others', '--exclude-standard'],
-                                    cwd=ROOT, text=True).splitlines()
+                                    cwd=ROOT, text=True, encoding='utf-8').splitlines()
     errors, json_count, link_count = [], 0, 0
     for name in sorted(set(paths)):
         path = ROOT / name
@@ -71,6 +117,7 @@ def main():
         errors.append('active job inventory differs from the schedule')
     preserved = source_errors()
     errors += preserved
+    errors += v2_errors()
     if errors:
         print('\n'.join(errors));sys.exit(1)
     count = len(json.loads((ROOT / SOURCES).read_text(encoding='utf-8'))['sources'])

@@ -1,10 +1,13 @@
 # Full Time growth execution and handoff
 
+> **Status: background, written before engine v2 (27 October 2026).** Where this file disagrees with the Engine v2 rulings in [AGENTS.md](AGENTS.md) or with [docs/ENGINE.md](docs/ENGINE.md), those win. Its targets and channel limits are history; the live ones are in `docs/NORTH_STAR.md` and AGENTS.md.
+
 The growth-side implementation of 17 October is complete, and the Control
-Center loop and its later protocol steps are built on top of it; what is still
-open is in docs/GET-GOING.md. Product implementation and Control Centre
-implementation belong to separate sessions using the briefs below. Krish has
-held the engine since 29 October (AGENTS.md, "Held").
+Center loop, its later protocol steps and engine v2 are built on top of it;
+what is still open is in docs/GET-GOING.md and in "Follow-ups from the v2
+merge" below. Product implementation and Control Centre implementation belong
+to separate sessions using the briefs below. Krish has held the engine since
+29 October (AGENTS.md, "Held").
 The engine never turns incomplete access or product gates into a success claim.
 
 ## Accepted boundaries
@@ -75,3 +78,38 @@ the same loop on a clean runner; it does not wake the engine while Krish holds
 it. Delivery means an accepted report whose
 read-back digest matches. The private bundle from `growth.py export` is a
 local backup, not the hand-off and not proof of delivery.
+
+## Follow-ups from the v2 merge (15 November 2026)
+
+Ruling (Krish, 2026-11-15): Full Time v2 lands on main keeping main's Control
+Center report. These parts of v2's report logic were not folded in, because
+each would change main's report design rather than add to it. Each is one pull
+request against `engine/reporting.py` and `engine/control_center.py`, proved
+against the stand-in in `tests/test_control_center.py`, and none is needed
+while the engine is held (a held report carries no proposals).
+
+1. **G1 and G2 in the report.** `engine/gates.py` queues the weekly spec (G1),
+   the matchday pack (G2) and a Codex card's allowance spend, and the loop
+   settles his answers to them, but `reporting.build` does not carry
+   `gates.pending()`, so they never reach his list. Fold them in as proposals
+   once the report can carry a `stage`.
+2. **Stages and `parent_proposal_id`.** v2 raised the report to 1.1.0 for
+   `stage` (plan, go_live, check_in) and checked each stage's wall
+   (`protocol_errors`). Main's report goes as 1.0.0, 1.16.0 or 1.20.0 and
+   carries no stage. Add stages inside main's version choice, never as a
+   second version rule.
+3. **One ask at a time on the engine's side.** v2 kept what waits on Krish's
+   list in the ledger (`still_waiting`, `waiting`), deferred a second ask of a
+   kind already waiting (`one_ask`) and never re-asked an answered digest
+   (`answered`, `answered_before`, `answered_in`). Control Center already shows
+   one ask per engine (`oneTurnEach`); decide whether the engine needs its own.
+4. **The standing ruling order D7, then D2, then D3**, and retiring the
+   release ask once D1 or ORGANIC is approved (`standing_order`,
+   `release_retired`). Main's report still asks the release decision while
+   `policy.release_open` is false.
+5. **Declined posts hold no slot.** v2 skipped an action Krish had already
+   answered on its digest, so three declines never blocked a fourth post.
+6. **The capabilities check** (`GET capabilities`, refusing a report version
+   Control Center does not offer, and reading `autonomy`).
+7. **The read window's fifteen-minute overlap** (`read_from`): main reads his
+   decisions from the last read time exactly.

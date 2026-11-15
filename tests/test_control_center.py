@@ -245,19 +245,30 @@ def sample_state(**extra):
             'rulings': {}, 'decisions': [], **extra}
 
 
+def rulings_on_19_october():
+    """The rulings as they stood on 19 October, before ruling 1 of 27 October (D1 with
+    ORGANIC, and the RELEASE entry) was recorded. These tests are about that day's asks,
+    so they must not move when rulings.json does."""
+    rulings = copy.deepcopy(growth.load_rulings())
+    rulings['D1'] = {**rulings['D1'], 'status': 'pending', 'date': '', 'words': '', 'evidence': ''}
+    for later in ('ORGANIC', 'RELEASE'):
+        rulings.pop(later, None)
+    return rulings
+
+
 def sample_report(run_id='fulltime:2026-10-19:daily', mode='synthetic'):
     today = dt.date(2026, 10, 19)
     items = [{'item_id': 'fulltime-rail', 'platform': 'other', 'why': 'rail', 'text': 'Read the stored verdicts.'},
              {'item_id': 'fulltime-release', 'platform': 'other', 'why': 'release', 'text': 'Release decision.'}]
     held = [{'creative_id': 'YT_PROOF_SHORT_C01_H01_V1_20261017', 'holds': ['RAIL', 'RELEASE', 'D1']}]
-    return reporting.build(run_id, mode, '2026-10-19T05:12:00Z', sample_state(), items, growth.load_rulings(),
+    return reporting.build(run_id, mode, '2026-10-19T05:12:00Z', sample_state(), items, rulings_on_19_october(),
                            reporting.objectives(today, [], {}), ['Synced full-time aaaaaaaaaa.'], held_items=held,
                            identity_known=False)
 
 
 class DigestAndReportTests(unittest.TestCase):
     def test_digest_reproduces_the_worked_example(self):
-        example = json.loads(Path(growth.HERE, 'docs/control-center/engine-report.example.json').read_text())
+        example = json.loads(Path(growth.HERE, 'docs/control-center/engine-report.example.json').read_text(encoding='utf-8'))
         self.assertEqual(reporting.canonical_sha256({k: v for k, v in example.items() if k != 'payload_sha256'}),
                          'f4351324e84aa1baf6afd1bc4d2ffadb3039ab6399b2309c2717b89a26a0a517')
         self.assertEqual(reporting.seal(example)['payload_sha256'], example['payload_sha256'])
@@ -524,7 +535,7 @@ class EntryPointTests(unittest.TestCase):
             code, text = self.run_cli(['cc', 'morning', '--offline', '--require-existing-history', '--synthetic'],
                                       {cc.TOKEN_ENV: TOKEN})
             self.assertEqual(code, 0, text)
-            saved = json.loads((Path(root) / 'control-center' / 'last.json').read_text())
+            saved = json.loads((Path(root) / 'control-center' / 'last.json').read_text(encoding='utf-8'))
             self.assertEqual(saved['status'], 'succeeded')
             self.assertNotIn(TOKEN, json.dumps(saved))
         report = next(iter(self.server.reports.values()))
@@ -607,7 +618,7 @@ class HeldTests(unittest.TestCase):
         self.assertEqual(sum(1 for p in report['proposals'] if p['wall'] != 'none'), 0)
         self.assertEqual([h['reason'] for h in report['holds']], ['NOT_READY'])
         detail = report['holds'][0]['detail']
-        for words in ('4 of 6', 'release decision', 'D7', 'Attribution', 'Workspace', 'D1 stays pending',
+        for words in ('4 of 6', 'release decision', 'D7', 'Attribution', 'Workspace', 'D1 is not in force',
                       'decision-log entry'):
             self.assertIn(words, detail)
         self.assertTrue(any('Held by Krish' in a['line'] for a in report['activity']))
@@ -803,7 +814,7 @@ class InstructionTests(unittest.TestCase):
         self.assertEqual([p['rank'] for p in report['priorities']], list(range(1, len(report['priorities']) + 1)))
         self.assertLessEqual(len(report['priorities']), 5)
         # Obsessions are Krish's own words from this repository's docs, never invented.
-        docs = Path(growth.HERE, 'docs/NORTH_STAR.md').read_text() + Path(growth.HERE, 'AGENTS.md').read_text()
+        docs = Path(growth.HERE, 'docs/NORTH_STAR.md').read_text(encoding='utf-8') + Path(growth.HERE, 'AGENTS.md').read_text(encoding='utf-8')
         flat = ' '.join(docs.split())
         for entry in report['obsessions']:
             words = entry['line'].removeprefix('Krish: ').strip('"')
@@ -917,7 +928,7 @@ class InstructionTests(unittest.TestCase):
             code, pulled = self.cli(['cc', 'instruction'])
             self.assertEqual(code, 0)
             self.assertEqual((pulled['instruction']['id'], pulled['act'], pulled['held']), (INSTRUCTION_ID, True, False))
-            kept = json.loads((Path(root) / 'control-center' / 'instruction.json').read_text())
+            kept = json.loads((Path(root) / 'control-center' / 'instruction.json').read_text(encoding='utf-8'))
             self.assertEqual(kept['words'], WORDS)   # under ignored local/ only, for the morning job to read
             code, started = self.cli(['cc', 'ack', '--state', 'started', '--line',
                                       'Drafting the hooks from published Pundit lines in private history.'])
@@ -985,8 +996,8 @@ class InstructionTests(unittest.TestCase):
         lines = [o['line'] for o in engine_state.obsessions()]
         self.assertEqual(len(lines), 3, lines)
         self.assertTrue(lines[2].startswith('Krish: "this cannot use my personal social media accounts'), lines[2])
-        star = Path(growth.HERE, 'docs/NORTH_STAR.md').read_text()
-        agents = Path(growth.HERE, 'AGENTS.md').read_text()
+        star = Path(growth.HERE, 'docs/NORTH_STAR.md').read_text(encoding='utf-8')
+        agents = Path(growth.HERE, 'AGENTS.md').read_text(encoding='utf-8')
         for owner, count in (('Krish, 17 October 2026: no personal social media accounts, and cost close to free.', 2),
                              ('Krish, 17 October 2026: "No cold outbound email." These apply to held drafts too.', 3)):
             with tempfile.TemporaryDirectory() as root:

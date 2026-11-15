@@ -8,6 +8,28 @@ No personal social accounts, cold outbound email, paid acquisition or paid
 media generation. All implementation belongs here. Full-time and Control
 Center changes are handoff briefs. Nothing here sends or publishes marketing.
 
+## Start here
+
+- **What it is chasing:** [docs/NORTH_STAR.md](docs/NORTH_STAR.md), and its number
+  and urgency on the first line under "Where it is right now" in [NOW.md](NOW.md).
+- **How it works now (engine v2):** [docs/ENGINE.md](docs/ENGINE.md), the 6 KB map a
+  fresh session starts from. The approved plan is [docs/ENGINE-V2.md](docs/ENGINE-V2.md).
+- **What happened last:** the newest `HANDOVER-*.md`.
+- **What waits on Krish today:** `python3 growth.py actions` (`--all` for every step).
+- **Everything open, with its holder:** [docs/OPEN.md](docs/OPEN.md).
+- **One matchday, step by step:** [docs/RUNBOOK-MATCHDAY.md](docs/RUNBOOK-MATCHDAY.md).
+
+The daily shape of v2: each morning the engine reads the product and the week's
+fixtures, prepares one matchday pack (G2) when a show is published, and reports
+to Control Center with Krish's actions as plain lines. Each Monday it proposes the
+week's plan (G1). Krish answers in Control Center and posts by hand in Buffer;
+the engine reads the permalinks back and counts what worked. A format goes live
+only when its readiness, computed from Krish's own verdicts, says so. The report
+itself is main's design (Ruling, Krish, 2026-11-15: Full Time v2 lands on main
+keeping main's Control Center report): while the engine is held it carries no
+proposals and one NOT_READY hold, and G1 and G2 are queued locally until they are
+folded into it (EXECUTION-PLAN.md, "Follow-ups from the v2 merge").
+
 ## Run
 
 Python 3.9+, git and network access are required. Rendering additionally uses
@@ -197,8 +219,9 @@ The report maps the engine's own outputs:
 |---|---|
 | `fulltime:YYYY-MM-DD:<kind>` (daily, report, dispatch; a dispatch adds `:gh<run>.<attempt>`) | `run_id` |
 | Ready actions, at most three | `proposals[]`, wall `none`; a creative that passed every gate is wall `post` with `exact_payload` and `channel` |
-| Held drafts and closed gates | `holds[]`, one per code (NOT_READY, RAIL, RELEASE, CHANNEL, CONSENT, DATA, D1 to D7). While `activation.json` or Control Center holds the engine, NOT_READY is the only hold and there are no proposals |
-| The release decision and pending rulings D1, D2, D3 and D7 | wall `strategy` proposals. D4, D5 and D6 unlock only channels the owner excluded, so they are holds, not asks |
+| Held drafts and closed gates | `holds[]`, one per code (NOT_READY, LIBRARY, RAIL, RELEASE, CHANNEL, CONSENT, DATA, D1 to D7). While `activation.json` or Control Center holds the engine, NOT_READY is the only hold and there are no proposals. LIBRARY is the weekly Growth Build reconcile |
+| The release decision and pending rulings (D1 and ORGANIC are approved; RELEASE is the product's own) | wall `strategy` proposals. D4, D5 and D6 unlock only channels the owner excluded, so they are holds, not asks |
+| Krish's actions today, the North Star readings and Google Analytics landings | `activity[]` lines, never objectives (Krish's actions only while the engine is not held) |
 | The weekly kill list | wall `strategy` proposals |
 | Human-confirmed publication receipts | `events[]` `creative_published` with the permalink |
 | `attributed_new_completers`, `marketing_cash_gbp` | `objectives[]` over the seven complete London days ending yesterday |

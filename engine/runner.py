@@ -5,9 +5,9 @@ import io
 import json
 from pathlib import Path
 import time
-from zoneinfo import ZoneInfo
 
 from . import policy
+from .clock import LONDON
 from .measurements import scorecard, validate_export
 from .records import History, atomic_json, fingerprint, now
 
@@ -20,14 +20,14 @@ def constraints(gate, measures, state):
         blockers.append(('rail', 'Read the stored editorial verdicts for the newest drop; fix the refusal in a full-time session before another paid run.'))
     if measures['unique_completers']['status'] != 'measured':
         blockers.append(('measurement', 'Implement the aggregate completion and mature return queries in the existing source path; counts remain unknown.'))
-    if not policy.release_open(state):
+    if policy.release_needed(state):
         blockers.append(('release', 'Public acquisition stays held until Krish makes the product release decision and a full-time session records it in its decision log.'))
     return blockers[:3]
 
 
 def run(growth, mode, offline=False, observation_file=None, run_date=None):
     started = time.monotonic()
-    today = dt.datetime.now(ZoneInfo('Europe/London')).date()
+    today = dt.datetime.now(LONDON).date()
     day = dt.date.fromisoformat(run_date) if run_date else today
     if day != today:
         raise ValueError('operational runs use today in Europe/London; historical windows belong in observations')
@@ -40,7 +40,7 @@ def run(growth, mode, offline=False, observation_file=None, run_date=None):
     history = History(Path(growth.LOCAL) / 'engine')
     rows = history.read()['observations']
     if observation_file:
-        incoming = validate_export(json.loads(Path(observation_file).read_text()))
+        incoming = validate_export(json.loads(Path(observation_file).read_text(encoding='utf-8')))
         with history.transaction() as journal:
             known = {fingerprint(x) for x in journal['observations']}
             journal['observations'] += [x for x in incoming if fingerprint(x) not in known]
@@ -49,7 +49,7 @@ def run(growth, mode, offline=False, observation_file=None, run_date=None):
     start = end - dt.timedelta(days=6) if mode == 'weekly' else end
     measures = scorecard(rows, start.isoformat(), end.isoformat())
     rail = state.get('rail')
-    gate = growth.push_gate(rail)
+    gate = growth.push_gate(rail, state)
     source = 'full-time ' + state['sha'][:10] + ', read ' + state['synced_at']
     items = [{'item_id': 'fulltime-' + key, 'platform': 'other', 'why': key,
               'text': text, 'estimated_minutes': 5} for key, text in constraints(gate, measures, state)]
