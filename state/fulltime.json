@@ -1,7 +1,7 @@
 {
   "canon": {
-    "AGENTS.md": "bc657876e3a3c7fe",
-    "NOW.md": "3e744953b85d80f5",
+    "AGENTS.md": "79e9f186d18761f5",
+    "NOW.md": "fa5ee4e873fd9725",
     "docs/00-product.md": "46beed6b2c22ed7a",
     "docs/01-brand.md": "f35e85845d0cfe4c",
     "docs/07-marketing.md": "e5e183e7188600fe",
@@ -16,8 +16,22 @@
   "canon_added": [],
   "canon_from_index": true,
   "canon_removed": [],
-  "changed_since_last_sync": [],
-  "commits": [],
+  "changed_since_last_sync": [
+    "AGENTS.md",
+    "NOW.md"
+  ],
+  "commits": [
+    {
+      "date": "2026-11-16T00:23:30Z",
+      "sha": "ea0e4a267d",
+      "subject": "docs(canon): sync the canon block to v2026.11.15.2 (#113)"
+    },
+    {
+      "date": "2026-11-16T00:02:24Z",
+      "sha": "90c879ee01",
+      "subject": "docs(steward): 2026-11-16 fix NOW.md audit: roll old bullets, cut where-bullets to 8, shorten"
+    }
+  ],
   "decisions": [
     "2026-10-26 - Solo analysis first; paid conversation after quality and adoption",
     "2026-10-16 - A pilot beta for fans, a December target, one feedback inbox",
@@ -173,6 +187,6 @@
       "status": "pending"
     }
   },
-  "sha": "3fbe8a9fbe79b1623dc83a922d467a0b84e98340",
-  "synced_at": "2026-11-15T21:53:01+00:00"
+  "sha": "ea0e4a267d1098682a61db52e667ba00eb0210dd",
+  "synced_at": "2026-11-16T02:13:20+00:00"
 }
