@@ -1,6 +1,6 @@
 # Full Time now
 
-Read from `krishanraja/full-time` at commit `ea0e4a267d` and from fulltime.fm on 2026-11-16T02:13:20+00:00 UTC by `python3 growth.py sync`.
+Read from `krishanraja/full-time` at commit `708cc284e4` and from fulltime.fm on 2026-11-17T03:57:48+00:00 UTC by `python3 growth.py sync`.
 Rewritten when a sync finds full-time, its open pull requests, the rail or the feed changed. The full-time repository and the live site are the source of truth; this is a reading of them.
 
 ## Push gate: HOLD
@@ -20,7 +20,6 @@ No match has 4 of 6 AI Pundits (newest: 1 of 6). A push sends fans to a match on
 
 Read these again before drafting anything:
 
-- changed: `AGENTS.md`
 - changed: `NOW.md`
 
 ## Krish's actions
@@ -83,8 +82,7 @@ His matchday and plan answers wait in Control Center; `growth.py actions` lists 
 
 ## Recent commits on main
 
-- `ea0e4a267d` 2026-11-16 docs(canon): sync the canon block to v2026.11.15.2 (#113)
-- `90c879ee01` 2026-11-16 docs(steward): 2026-11-16 fix NOW.md audit: roll old bullets, cut where-bullets to 8, shorten
+- `708cc284e4` 2026-11-17 docs(steward): 2026-11-17 re-stamp NOW.md head after canon sync
 
 ## Work in flight (open pull requests)
 
