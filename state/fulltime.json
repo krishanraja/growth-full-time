@@ -52,7 +52,7 @@
       "branch": "harness/canon-sync",
       "number": 115,
       "title": "Sync the canon block",
-      "updated": "2026-11-18T02:35:55Z"
+      "updated": "2026-11-18T14:34:12Z"
     }
   ],
   "previous_sha": "708cc284e40e9ab1f8cc3222d5e037b945693c0b",
@@ -181,5 +181,5 @@
     }
   },
   "sha": "708cc284e40e9ab1f8cc3222d5e037b945693c0b",
-  "synced_at": "2026-11-18T04:29:52+00:00"
+  "synced_at": "2026-11-18T22:04:01+00:00"
 }
