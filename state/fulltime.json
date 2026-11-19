@@ -1,6 +1,6 @@
 {
   "canon": {
-    "AGENTS.md": "79e9f186d18761f5",
+    "AGENTS.md": "962e02651fe3f341",
     "NOW.md": "f743f608b29ea17d",
     "docs/00-product.md": "46beed6b2c22ed7a",
     "docs/01-brand.md": "f35e85845d0cfe4c",
@@ -16,8 +16,16 @@
   "canon_added": [],
   "canon_from_index": true,
   "canon_removed": [],
-  "changed_since_last_sync": [],
-  "commits": [],
+  "changed_since_last_sync": [
+    "AGENTS.md"
+  ],
+  "commits": [
+    {
+      "date": "2026-11-18T22:22:13Z",
+      "sha": "2f080a3fcb",
+      "subject": "docs(canon): sync the canon block to v2026.11.18.7 (#115)"
+    }
+  ],
   "decisions": [
     "2026-10-26 - Solo analysis first; paid conversation after quality and adoption",
     "2026-10-16 - A pilot beta for fans, a December target, one feedback inbox",
@@ -49,10 +57,10 @@
   "notes": [],
   "open_pulls": [
     {
-      "branch": "harness/canon-sync",
-      "number": 115,
-      "title": "Sync the canon block",
-      "updated": "2026-11-18T14:34:12Z"
+      "branch": "steward/2026-11-19",
+      "number": 116,
+      "title": "docs(steward): 2026-11-19 needs review",
+      "updated": "2026-11-19T02:01:40Z"
     }
   ],
   "previous_sha": "708cc284e40e9ab1f8cc3222d5e037b945693c0b",
@@ -180,6 +188,6 @@
       "status": "pending"
     }
   },
-  "sha": "708cc284e40e9ab1f8cc3222d5e037b945693c0b",
-  "synced_at": "2026-11-18T22:04:01+00:00"
+  "sha": "2f080a3fcb93c922da276e7e612e0663e21c18b0",
+  "synced_at": "2026-11-19T03:37:31+00:00"
 }
