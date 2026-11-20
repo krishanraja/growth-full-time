@@ -17,7 +17,13 @@
   "canon_from_index": true,
   "canon_removed": [],
   "changed_since_last_sync": [],
-  "commits": [],
+  "commits": [
+    {
+      "date": "2026-11-20T11:34:14Z",
+      "sha": "cefc4041ee",
+      "subject": "docs: note where the new page-reading and web-search keys may help (#118)"
+    }
+  ],
   "decisions": [
     "2026-10-26 - Solo analysis first; paid conversation after quality and adoption",
     "2026-10-16 - A pilot beta for fans, a December target, one feedback inbox",
@@ -186,6 +192,6 @@
       "status": "pending"
     }
   },
-  "sha": "2f080a3fcb93c922da276e7e612e0663e21c18b0",
-  "synced_at": "2026-11-20T03:27:17+00:00"
+  "sha": "cefc4041ee706043788a79906f6f927ae3318a1d",
+  "synced_at": "2026-11-20T13:04:03+00:00"
 }
