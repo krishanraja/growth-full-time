@@ -16,16 +16,8 @@
   "canon_added": [],
   "canon_from_index": true,
   "canon_removed": [],
-  "changed_since_last_sync": [
-    "AGENTS.md"
-  ],
-  "commits": [
-    {
-      "date": "2026-11-18T22:22:13Z",
-      "sha": "2f080a3fcb",
-      "subject": "docs(canon): sync the canon block to v2026.11.18.7 (#115)"
-    }
-  ],
+  "changed_since_last_sync": [],
+  "commits": [],
   "decisions": [
     "2026-10-26 - Solo analysis first; paid conversation after quality and adoption",
     "2026-10-16 - A pilot beta for fans, a December target, one feedback inbox",
@@ -57,13 +49,19 @@
   "notes": [],
   "open_pulls": [
     {
+      "branch": "steward/2026-11-20",
+      "number": 117,
+      "title": "docs(steward): 2026-11-20 needs review",
+      "updated": "2026-11-20T01:55:20Z"
+    },
+    {
       "branch": "steward/2026-11-19",
       "number": 116,
       "title": "docs(steward): 2026-11-19 needs review",
       "updated": "2026-11-19T02:01:40Z"
     }
   ],
-  "previous_sha": "708cc284e40e9ab1f8cc3222d5e037b945693c0b",
+  "previous_sha": "2f080a3fcb93c922da276e7e612e0663e21c18b0",
   "push": {
     "open": false,
     "why": "no match has 4 of 6 AI Pundits (newest: 1 of 6)"
@@ -189,5 +187,5 @@
     }
   },
   "sha": "2f080a3fcb93c922da276e7e612e0663e21c18b0",
-  "synced_at": "2026-11-19T03:37:31+00:00"
+  "synced_at": "2026-11-20T03:27:17+00:00"
 }
