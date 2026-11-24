@@ -11,6 +11,14 @@ Moved verbatim from `NOW.md` (closeout fold, to keep NOW.md inside the audit's l
 
 From "Where it is right now":
 
+- docs/control-center/ is Control Center's protocol bundle 1.33.0, byte for byte (bundle_sha256 4b7175a8aebbb8979eaefbeea1b7f0f44f2cffa0bbba9cea341da784fe7fde4d), the last protocol version of 14 November. (2026-11-14)
+
+## 2026-11-24
+
+Moved verbatim from `NOW.md` (closeout fold, to keep NOW.md inside the audit's limits).
+
+From "Where it is right now":
+
 - docs/control-center/ is Control Center's protocol bundle 1.28.0, byte for byte (bundle_sha256 b0dfa0d7aaa10aea0de45fb5f7dcc241c62bef70766f0fed9c6351d69af1b791), with bundle.json and a hash test that fails an edit in place (integration plan I-11). (2026-11-14)
 
 ## 2026-11-24

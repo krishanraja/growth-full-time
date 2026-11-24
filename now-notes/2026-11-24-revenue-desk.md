@@ -1,3 +1,0 @@
-Status: The revenue desk adapter is in (Ruling, Krish, 2026-11-24): config/revenue-desk.json sets this engine's stage to measure first, since no step is counted and Full Time has no paid step, and its one output is the reading plan for attributed_new_completers: the weekly aggregate full-time owes, how growth.py imports it and where engine/measurements.py and engine/reporting.py score it. Bands are unset assumptions that bind only after Krish's yes, and spend_authority is none. tests/test_revenue_desk.py and the self-test check the adapter parses and its sources exist.
-Next: full-time exports one measured whole-week attributed_new_completers row (docs/GET-GOING.md, Step 3), so the number leaves U4.
-North Star check (2026-11-24): holds.
