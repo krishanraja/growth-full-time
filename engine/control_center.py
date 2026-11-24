@@ -468,8 +468,8 @@ def execute(client, command, run_id, work, since):
 # ---------------------------------------------------------------------------
 def measurement_lines(local, today, rows=None, directive=None):
     """The North Star readings and Google Analytics landings, as activity lines for
-    Control Center. They stay out of the objectives until Control Center registers
-    the new keys (briefs/2026-10-27-control-center-measurement.md), and out of the
+    Control Center. The objective itself is reporting.objectives' attributed_new_completers,
+    so these stay activity lines (briefs/2026-10-27-control-center-measurement.md), and out of the
     printed summary, because the runner's log is public. Landings come from Control
     Center itself when its directive carries ga4_landings (Krish, 2026-10-27: "just
     get google analytics data from control center"), else from local/ga4/."""

@@ -3,7 +3,7 @@
   "product": "fulltime",
   "observations": [
     {
-      "metric": "share_arrived_new_listeners",
+      "metric": "attributed_new_completers",
       "value": 7,
       "source": "synthetic-example",
       "query_ref": "synthetic-example:share-token-first-listen-7d:v0",

@@ -1,7 +1,7 @@
 """The Measurement Analyst (docs/ENGINE-V2.md, crew row 8; MEASUREMENT.md, "Share
 attribution and Google Analytics").
 
-The North Star is share_arrived_new_listeners: new listeners a week who arrived
+The North Star is attributed_new_completers: new listeners a week who arrived
 through a fan's shared link (docs/NORTH_STAR.md). The product stores a new
 identity's first touch once, on its first visit, and counts it as share-arrived
 only when that first touch carried a valid share token and the first finished show
@@ -31,7 +31,7 @@ GA4_LABELS = ('utm_source', 'utm_medium', 'utm_campaign', 'utm_content')
 GA4_COUNTS = ('new_users', 'sessions', 'engaged_sessions')
 GA4_METRICS = ('ga4_landing_new_users', 'ga4_landing_sessions')
 UNTAGGED = '(not set)'
-LISTENER_OBJECTIVES = ('share_arrived_new_listeners', 'brand_post_new_listeners')
+LISTENER_OBJECTIVES = ('attributed_new_completers', 'brand_post_new_listeners')
 UNTOKENISED = 'untokenised_new_listeners'
 STALE_AFTER = dt.timedelta(hours=48)
 DATE = re.compile(r'^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
@@ -44,7 +44,7 @@ PERSON_PART = re.compile(r'email|phone|mobile|cookie|fingerprint|useragent|'
                          r'(client|user|device|visitor|member|sharer|listener|account|customer|person|profile|'
                          r'session|advertising|pseudo|install|instance|contact)(id|identifier|key|hash)')
 NO_EXPORT = {
-    'share_arrived_new_listeners':
+    'attributed_new_completers':
         'No product export yet: the share token, the first touch and its join to a first finished show '
         'within 7 days are not built in the product (MEASUREMENT.md, share attribution).',
     'brand_post_new_listeners':
@@ -116,7 +116,7 @@ def _untokenised(found, as_of):
 
 
 def objectives(rows, today, as_of=None):
-    """Control Center objectives for share_arrived_new_listeners (the North Star) and
+    """Control Center objectives for attributed_new_completers (the North Star) and
     brand_post_new_listeners, over the seven complete London days ending yesterday, in
     reporting.objectives' shape. A value only from a measured product total row for
     exactly that week, with its interval in the reason; otherwise null with the

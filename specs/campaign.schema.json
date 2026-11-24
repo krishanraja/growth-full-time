@@ -32,8 +32,7 @@
         "additionalProperties": false,
         "required": ["key", "target"],
         "properties": {
-          "key": {"enum": ["share_arrived_new_listeners", "brand_post_new_listeners", "marketing_cash_gbp",
-                           "attributed_new_completers"]},
+          "key": {"enum": ["attributed_new_completers", "brand_post_new_listeners", "marketing_cash_gbp"]},
           "target": {"type": "number", "minimum": 0,
                      "description": "marketing_cash_gbp must be exactly 0. Each key appears once."}
         }
@@ -102,8 +101,7 @@
         "properties": {
           "experiment_id": {"type": "string", "minLength": 1},
           "arm_unit": {"enum": ["matchweek", "match"], "description": "Never a sharer."},
-          "metric": {"enum": ["share_arrived_new_listeners", "brand_post_new_listeners", "marketing_cash_gbp",
-                              "attributed_new_completers"]},
+          "metric": {"enum": ["attributed_new_completers", "brand_post_new_listeners", "marketing_cash_gbp"]},
           "min_matchweeks": {"type": "integer", "minimum": 2},
           "stop_rule": {"type": "string", "minLength": 1}
         }

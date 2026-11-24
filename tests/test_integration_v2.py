@@ -31,7 +31,7 @@ class MeasurementLines(unittest.TestCase):
 
     def test_north_star_is_missing_never_zero_and_ga4_says_not_read(self):
         lines = control_center.measurement_lines(self.local, TODAY)
-        north = [line for line in lines if line.startswith('North Star reading, share_arrived_new_listeners')]
+        north = [line for line in lines if line.startswith('North Star reading, attributed_new_completers')]
         self.assertEqual(len(north), 1)
         self.assertIn('missing', north[0])
         self.assertNotIn(' 0 people', ' '.join(lines))

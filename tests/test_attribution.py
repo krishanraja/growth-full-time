@@ -89,7 +89,7 @@ class ZScore(unittest.TestCase):
 
 class Metrics(unittest.TestCase):
     def test_the_six_metric_names_are_registered(self):
-        for name in ('share_arrived_new_listeners', 'brand_post_new_listeners', 'untokenised_new_listeners',
+        for name in ('attributed_new_completers', 'brand_post_new_listeners', 'untokenised_new_listeners',
                      'shares_created', 'ga4_landing_new_users', 'ga4_landing_sessions'):
             self.assertIn(name, measurements.METRICS)
             self.assertIn(name, measurements.COUNTS)
@@ -97,13 +97,13 @@ class Metrics(unittest.TestCase):
     def test_the_example_product_export_is_valid(self):
         data = json.loads((ROOT / 'examples' / 'attribution-export.example.json').read_text(encoding='utf-8'))
         rows = measurements.validate_export(data)
-        self.assertEqual({r['metric'] for r in rows}, {'share_arrived_new_listeners', 'brand_post_new_listeners',
+        self.assertEqual({r['metric'] for r in rows}, {'attributed_new_completers', 'brand_post_new_listeners',
                                                        'untokenised_new_listeners', 'shares_created'})
         self.assertTrue(all('synthetic' in r['source'] and 'synthetic' in r['query_ref'] for r in rows))
         result = by_key(objectives(rows, dt.date(2026, 10, 26),
                                    as_of=dt.datetime(2026, 10, 26, 9, 0, tzinfo=UTC)))
-        self.assertEqual(result['share_arrived_new_listeners']['availability'], 'measured')
-        self.assertEqual(result['share_arrived_new_listeners']['value'], 7)
+        self.assertEqual(result['attributed_new_completers']['availability'], 'measured')
+        self.assertEqual(result['attributed_new_completers']['value'], 7)
         self.assertEqual([r['creative_id'] for r in rows if 'creative_id' in r], ['TT_CLASH_CLIP_C01_H01_V1_20261020'])
         self.assertEqual(result['brand_post_new_listeners']['value'], 2)     # the total row, never the breakdown
 
@@ -111,14 +111,14 @@ class Metrics(unittest.TestCase):
 class Objectives(unittest.TestCase):
     def test_no_export_is_missing_with_a_reason_never_zero(self):
         result = objectives([], TODAY, as_of=AS_OF)
-        self.assertEqual([o['key'] for o in result], ['share_arrived_new_listeners', 'brand_post_new_listeners'])
+        self.assertEqual([o['key'] for o in result], ['attributed_new_completers', 'brand_post_new_listeners'])
         for item in result:
             self.assertIsNone(item['value'])
             self.assertEqual(item['availability'], 'missing')
             self.assertTrue(item['reason'].startswith('No product export yet'))
 
     def test_the_shape_and_window_match_reporting(self):
-        result = objectives([row('share_arrived_new_listeners', 5)], TODAY, as_of=AS_OF)
+        result = objectives([row('attributed_new_completers', 5)], TODAY, as_of=AS_OF)
         _, _, opens, closes = reporting.week_window(TODAY)
         shape = reporting._objective('x', 'people', None, 'missing', None, reporting.week_window(TODAY))
         schema = reporting.load_schema()['properties']['objectives']
@@ -130,36 +130,36 @@ class Objectives(unittest.TestCase):
         self.assertEqual(opens, '2026-06-29T00:00:00+01:00')
 
     def test_a_measured_week_carries_its_interval(self):
-        result = by_key(objectives([row('share_arrived_new_listeners', 5),
+        result = by_key(objectives([row('attributed_new_completers', 5),
                                     row('brand_post_new_listeners', 49)], TODAY, as_of=AS_OF))
-        share = result['share_arrived_new_listeners']
+        share = result['attributed_new_completers']
         self.assertEqual((share['value'], share['availability']), (5, 'measured'))
         self.assertIn('0.5 to 9.5', share['reason'])
         self.assertIn('35.0 to 63.0', result['brand_post_new_listeners']['reason'])
 
     def test_a_measured_zero_stays_zero(self):
-        share = objectives([row('share_arrived_new_listeners', 0)], TODAY, as_of=AS_OF)[0]
+        share = objectives([row('attributed_new_completers', 0)], TODAY, as_of=AS_OF)[0]
         self.assertEqual((share['value'], share['availability']), (0, 'measured'))
         self.assertIn('0.0 to 0.0', share['reason'])
 
     def test_untokenised_arrivals_are_reported_apart(self):
-        share = objectives([row('share_arrived_new_listeners', 3), row('untokenised_new_listeners', 11)],
+        share = objectives([row('attributed_new_completers', 3), row('untokenised_new_listeners', 11)],
                            TODAY, as_of=AS_OF)[0]
         self.assertEqual(share['value'], 3)
         self.assertIn('Untokenised new listeners, reported apart and never counted here: 11', share['reason'])
 
     def test_an_old_reading_is_stale_and_null(self):
         late = AS_OF + dt.timedelta(hours=60)
-        share = objectives([row('share_arrived_new_listeners', 5)], TODAY, as_of=late)[0]
+        share = objectives([row('attributed_new_completers', 5)], TODAY, as_of=late)[0]
         self.assertEqual((share['value'], share['availability']), (None, 'stale'))
         self.assertTrue(share['reason'].startswith('Stale'))
 
     def test_a_row_marked_stale_is_stale(self):
-        share = objectives([row('share_arrived_new_listeners', 5, status='stale')], TODAY, as_of=AS_OF)[0]
+        share = objectives([row('attributed_new_completers', 5, status='stale')], TODAY, as_of=AS_OF)[0]
         self.assertEqual((share['value'], share['availability']), (None, 'stale'))
 
     def test_another_window_is_a_mismatch_never_added_into_the_week(self):
-        daily = [row('share_arrived_new_listeners', 2, window_start=day, window_end=day)
+        daily = [row('attributed_new_completers', 2, window_start=day, window_end=day)
                  for day in ('2026-07-04', '2026-07-05')]
         share = objectives(daily, TODAY, as_of=AS_OF)[0]
         self.assertEqual((share['value'], share['availability']), (None, 'missing'))
@@ -168,20 +168,20 @@ class Objectives(unittest.TestCase):
         self.assertIn(f'{START} to {END}', share['reason'])
 
     def test_a_week_the_export_reports_missing_is_missing(self):
-        share = objectives([row('share_arrived_new_listeners', None, status='missing')], TODAY, as_of=AS_OF)[0]
+        share = objectives([row('attributed_new_completers', None, status='missing')], TODAY, as_of=AS_OF)[0]
         self.assertEqual((share['value'], share['availability']), (None, 'missing'))
         self.assertIn('reports this count as missing', share['reason'])
 
     def test_the_newest_capture_wins(self):
-        rows = [row('share_arrived_new_listeners', 4, observed_at='2026-07-06T05:00:00+00:00'),
-                row('share_arrived_new_listeners', 6, observed_at='2026-07-06T07:00:00+00:00')]
+        rows = [row('attributed_new_completers', 4, observed_at='2026-07-06T05:00:00+00:00'),
+                row('attributed_new_completers', 6, observed_at='2026-07-06T07:00:00+00:00')]
         self.assertEqual(objectives(rows, TODAY, as_of=AS_OF)[0]['value'], 6)
 
     def test_rows_are_validated(self):
         with self.assertRaises(ValueError):
-            objectives([row('share_arrived_new_listeners', 2.5)], TODAY, as_of=AS_OF)
+            objectives([row('attributed_new_completers', 2.5)], TODAY, as_of=AS_OF)
         with self.assertRaises(ValueError):
-            objectives([{**row('share_arrived_new_listeners', 2), 'client_id': 'x'}], TODAY, as_of=AS_OF)
+            objectives([{**row('attributed_new_completers', 2), 'client_id': 'x'}], TODAY, as_of=AS_OF)
 
 
 class GA4Rows(unittest.TestCase):
@@ -321,8 +321,9 @@ class NoPathToListeners(unittest.TestCase):
     """GA4 landings are web sessions, never listeners (MEASUREMENT.md)."""
 
     def test_ga4_metrics_are_never_listener_metrics(self):
-        listeners = {m for m in measurements.METRICS if m.endswith('_listeners')}
-        self.assertEqual(listeners, {'share_arrived_new_listeners', 'brand_post_new_listeners',
+        listeners = measurements.LISTENER_METRICS
+        self.assertLessEqual(listeners, measurements.METRICS)
+        self.assertEqual(listeners, {'attributed_new_completers', 'brand_post_new_listeners',
                                      'untokenised_new_listeners'})
         self.assertFalse(set(attribution.GA4_METRICS) & listeners)
         for exported in (export(), export([]), export([landing(new_users=500, sessions=900, engaged=10)])):
@@ -336,12 +337,12 @@ class NoPathToListeners(unittest.TestCase):
             self.assertIsNone(item['value'])
             self.assertTrue(item['reason'].startswith('No product export yet'))
         card = measurements.scorecard(ga4_observations(export()), START, END, as_of=AS_OF)
-        for metric in ('share_arrived_new_listeners', 'brand_post_new_listeners', 'untokenised_new_listeners'):
+        for metric in ('attributed_new_completers', 'brand_post_new_listeners', 'untokenised_new_listeners'):
             self.assertEqual(card[metric]['status'], 'missing')
         self.assertEqual(card['ga4_landing_sessions']['value'], 76)
 
     def test_a_ga4_row_relabelled_as_listeners_is_refused(self):
-        for metric in ('share_arrived_new_listeners', 'brand_post_new_listeners', 'untokenised_new_listeners'):
+        for metric in ('attributed_new_completers', 'brand_post_new_listeners', 'untokenised_new_listeners'):
             forged = dict(ga4_observations(export())[0], metric=metric)
             with self.assertRaisesRegex(ValueError, 'never listeners'):
                 objectives([forged], TODAY, as_of=AS_OF)
@@ -386,7 +387,7 @@ class GA4NeverEntersHistoryAsListeners(unittest.TestCase):
     """Review wave 2: a GA4 listener row was accepted at import, then blocked every later reading."""
 
     def test_the_import_refuses_a_ga4_listener_row(self):
-        for metric in ('share_arrived_new_listeners', 'brand_post_new_listeners', 'untokenised_new_listeners'):
+        for metric in ('attributed_new_completers', 'brand_post_new_listeners', 'untokenised_new_listeners'):
             forged = row(metric, 58, source='ga4', query_ref='ga4:landings:v1')
             with self.subTest(metric=metric):
                 with self.assertRaisesRegex(ValueError, 'never listeners'):
@@ -404,7 +405,7 @@ class GA4NeverEntersHistoryAsListeners(unittest.TestCase):
                             ('GA landings', 'synthetic:v1'), ('synthetic', 'gtag:page_view:v1')):
             with self.subTest(source=source, query_ref=ref):
                 with self.assertRaisesRegex(ValueError, 'never listeners'):
-                    objectives([row('share_arrived_new_listeners', 58, source=source, query_ref=ref)],
+                    objectives([row('attributed_new_completers', 58, source=source, query_ref=ref)],
                                TODAY, as_of=AS_OF)
 
     def test_product_sources_and_ga4_landing_rows_still_pass(self):
@@ -412,7 +413,7 @@ class GA4NeverEntersHistoryAsListeners(unittest.TestCase):
                             ('posthog-product-analytics', 'first-finished-show:v1'),
                             ('synthetic-product-export', 'synthetic:share-token-first-listen-7d:v0')):
             with self.subTest(source=source):
-                share = objectives([row('share_arrived_new_listeners', 5, source=source, query_ref=ref)],
+                share = objectives([row('attributed_new_completers', 5, source=source, query_ref=ref)],
                                    TODAY, as_of=AS_OF)[0]
                 self.assertEqual(share['value'], 5)
         landing_row = row('ga4_landing_sessions', 76, source='ga4', query_ref='ga4:landings:v1')
@@ -423,17 +424,17 @@ class GA4NeverEntersHistoryAsListeners(unittest.TestCase):
         stop every later reading."""
         old = row('brand_post_new_listeners', 58, source='ga4', query_ref='ga4:landings:v1',
                   window_start='2026-06-22', window_end='2026-06-28', observed_at='2026-06-29T06:30:00+00:00')
-        late = row('share_arrived_new_listeners', 9, window_start='2026-06-22', window_end='2026-06-28',
+        late = row('attributed_new_completers', 9, window_start='2026-06-22', window_end='2026-06-28',
                    observed_at='2026-06-28T10:00:00+00:00')
-        result = by_key(objectives([old, late, row('share_arrived_new_listeners', 7)], TODAY, as_of=AS_OF))
-        self.assertEqual(result['share_arrived_new_listeners']['value'], 7)
+        result = by_key(objectives([old, late, row('attributed_new_completers', 7)], TODAY, as_of=AS_OF))
+        self.assertEqual(result['attributed_new_completers']['value'], 7)
         self.assertTrue(result['brand_post_new_listeners']['reason'].startswith('No product export yet'))
-        card = measurements.scorecard([old, late, row('share_arrived_new_listeners', 7)], START, END, as_of=AS_OF)
-        self.assertEqual(card['share_arrived_new_listeners']['value'], 7)
+        card = measurements.scorecard([old, late, row('attributed_new_completers', 7)], START, END, as_of=AS_OF)
+        self.assertEqual(card['attributed_new_completers']['value'], 7)
 
     def test_a_bad_row_for_this_week_still_refuses_the_reading(self):
         with self.assertRaisesRegex(ValueError, 'never listeners'):
-            objectives([row('share_arrived_new_listeners', 7),
+            objectives([row('attributed_new_completers', 7),
                         row('untokenised_new_listeners', 3, source='ga4')], TODAY, as_of=AS_OF)
 
 
@@ -446,17 +447,17 @@ class WholeLondonWeeks(unittest.TestCase):
                       '2026-07-06T09:30:00+14:00'):     # 20:30 on 5 July in London, dated the 6th locally
             with self.subTest(observed_at=taken):
                 with self.assertRaisesRegex(ValueError, 'whole London days'):
-                    measurements.validate(row('share_arrived_new_listeners', 3, observed_at=taken))
+                    measurements.validate(row('attributed_new_completers', 3, observed_at=taken))
                 with self.assertRaisesRegex(ValueError, 'whole London days'):
-                    objectives([row('share_arrived_new_listeners', 3, observed_at=taken)], TODAY, as_of=AS_OF)
+                    objectives([row('attributed_new_completers', 3, observed_at=taken)], TODAY, as_of=AS_OF)
 
     def test_a_capture_after_the_last_london_day_passes(self):
         # 23:30 UTC on 5 July is 00:30 on 6 July in London: the week had ended.
-        share = objectives([row('share_arrived_new_listeners', 3, observed_at='2026-07-05T23:30:00+00:00')],
+        share = objectives([row('attributed_new_completers', 3, observed_at='2026-07-05T23:30:00+00:00')],
                            TODAY, as_of=AS_OF)[0]
         self.assertEqual((share['value'], share['availability']), (3, 'measured'))
         # In winter London is on UTC: 00:05 UTC on Monday 12 January is past Sunday.
-        winter = row('share_arrived_new_listeners', 4, window_start='2026-01-05', window_end='2026-01-11',
+        winter = row('attributed_new_completers', 4, window_start='2026-01-05', window_end='2026-01-11',
                      observed_at='2026-01-12T00:05:00Z')
         self.assertEqual(measurements.validate(dict(winter)), winter)
 
@@ -469,21 +470,21 @@ class StrictDates(unittest.TestCase):
                            (20260629, END)):
             with self.subTest(start=start, end=end):
                 with self.assertRaisesRegex(ValueError, 'YYYY-MM-DD'):
-                    measurements.validate(row('share_arrived_new_listeners', 3, window_start=start, window_end=end))
+                    measurements.validate(row('attributed_new_completers', 3, window_start=start, window_end=end))
 
     def test_one_week_written_two_ways_cannot_pass_the_duplicate_check(self):
         with self.assertRaises(ValueError):
             measurements.validate_export({'schema_version': 1, 'product': 'fulltime', 'observations': [
-                row('share_arrived_new_listeners', 3),
-                row('share_arrived_new_listeners', 4, window_start='20260629', window_end='20260705')]})
+                row('attributed_new_completers', 3),
+                row('attributed_new_completers', 4, window_start='20260629', window_end='20260705')]})
 
     def test_only_rfc_3339_captures(self):
         for taken in ('2026-07-06 06:00:00+00:00', '2026-07-06T06:00+00:00', '2026-07-06T06:00:00',
                       '20260706T060000Z', '2026-07-06T06:00:00z'):
             with self.subTest(observed_at=taken):
                 with self.assertRaisesRegex(ValueError, 'RFC 3339'):
-                    measurements.validate(row('share_arrived_new_listeners', 3, observed_at=taken))
-        self.assertTrue(measurements.validate(row('share_arrived_new_listeners', 3,
+                    measurements.validate(row('attributed_new_completers', 3, observed_at=taken))
+        self.assertTrue(measurements.validate(row('attributed_new_completers', 3,
                                                   observed_at='2026-07-06T06:00:00.5Z')))
 
     def test_source_and_query_ref_are_text(self):
@@ -499,7 +500,7 @@ class BreakdownByCreative(unittest.TestCase):
     def test_a_total_and_one_row_per_creative_are_accepted(self):
         rows = measurements.validate_export({'schema_version': 1, 'product': 'fulltime', 'observations': [
             row('brand_post_new_listeners', 5), row('brand_post_new_listeners', 3, creative_id=CREATIVE),
-            row('brand_post_new_listeners', 2, creative_id=OTHER), row('share_arrived_new_listeners', 7)]})
+            row('brand_post_new_listeners', 2, creative_id=OTHER), row('attributed_new_completers', 7)]})
         self.assertEqual(len(rows), 4)
         result = by_key(objectives(rows, TODAY, as_of=AS_OF))
         self.assertEqual(result['brand_post_new_listeners']['value'], 5)
@@ -514,7 +515,7 @@ class BreakdownByCreative(unittest.TestCase):
         self.assertEqual((alone['value'], alone['availability']), (None, 'missing'))
 
     def test_the_breakdown_is_refused_anywhere_else(self):
-        for bad in (row('share_arrived_new_listeners', 3, creative_id=CREATIVE),
+        for bad in (row('attributed_new_completers', 3, creative_id=CREATIVE),
                     row('ga4_landing_sessions', 3, creative_id=CREATIVE),
                     row('brand_post_new_listeners', 3, creative_id=CREATIVE + '\n'),
                     row('brand_post_new_listeners', 3, creative_id='newsletter'),
@@ -532,7 +533,7 @@ class UntokenisedSideFigure(unittest.TestCase):
     """Review wave 2: the untokenised count ignored a newer missing capture and staleness."""
 
     def test_a_newer_missing_capture_is_reported_as_missing(self):
-        share = objectives([row('share_arrived_new_listeners', 7),
+        share = objectives([row('attributed_new_completers', 7),
                             row('untokenised_new_listeners', 40, observed_at='2026-07-06T05:00:00+00:00'),
                             row('untokenised_new_listeners', None, status='missing',
                                 observed_at='2026-07-06T05:30:00+00:00')], TODAY, as_of=AS_OF)[0]
@@ -542,13 +543,13 @@ class UntokenisedSideFigure(unittest.TestCase):
 
     def test_an_old_untokenised_count_is_reported_as_stale(self):
         later = dt.datetime(2026, 7, 8, 7, 0, tzinfo=UTC)
-        share = objectives([row('share_arrived_new_listeners', 7, observed_at='2026-07-07T13:30:00+00:00'),
+        share = objectives([row('attributed_new_completers', 7, observed_at='2026-07-07T13:30:00+00:00'),
                             row('untokenised_new_listeners', 40, observed_at='2026-07-06T06:30:00+00:00')],
                            TODAY, as_of=later)[0]
         self.assertEqual((share['value'], share['availability']), (7, 'measured'))
         self.assertNotIn(': 40.', share['reason'])
         self.assertIn('Untokenised new listeners, reported apart: stale.', share['reason'])
-        marked = objectives([row('share_arrived_new_listeners', 7),
+        marked = objectives([row('attributed_new_completers', 7),
                              row('untokenised_new_listeners', 40, status='stale')], TODAY, as_of=AS_OF)[0]
         self.assertIn('reported apart: stale.', marked['reason'])
 

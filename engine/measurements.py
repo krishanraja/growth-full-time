@@ -11,7 +11,7 @@ METRICS = {'unique_visitors', 'unique_players', 'unique_completers', 'reachable_
            'survey_respondents', 'very_disappointed', 'shares_attempted', 'attributed_new_completers',
            'ga4_users', 'ga4_sessions', 'posthog_active_users', 'pageviews', 'events',
            'wrong_fact_reports', 'marketing_cash_gbp', 'model_spend_usd', 'founder_minutes',
-           'share_arrived_new_listeners', 'brand_post_new_listeners', 'untokenised_new_listeners',
+           'brand_post_new_listeners', 'untokenised_new_listeners',
            'shares_created', 'ga4_landing_new_users', 'ga4_landing_sessions'}
 COUNTS = METRICS - {'marketing_cash_gbp', 'model_spend_usd', 'founder_minutes'}
 RATIOS = {'play_rate': ('unique_players', 'unique_visitors'),
@@ -22,6 +22,9 @@ RATIOS = {'play_rate': ('unique_players', 'unique_visitors'),
           'very_disappointed_rate': ('very_disappointed', 'survey_respondents')}
 FIELDS = {'metric', 'value', 'source', 'query_ref', 'window_start', 'window_end',
           'observed_at', 'status', 'note', 'cohort_start', 'cohort_end', 'follow_up_through', 'creative_id'}
+# Listener counts: only the product's own export may carry them, never a GA4 row.
+# attributed_new_completers is the North Star (docs/NORTH_STAR.md, NOW.md).
+LISTENER_METRICS = {'attributed_new_completers', 'brand_post_new_listeners', 'untokenised_new_listeners'}
 # The one metric the product may break down by creative ID, beside its total row.
 BY_CREATIVE = 'brand_post_new_listeners'
 DATE = re.compile(r'[0-9]{4}-[0-9]{2}-[0-9]{2}')
@@ -60,7 +63,7 @@ def validate(observation):
         raise ValueError('observation is missing provenance or has an unknown metric')
     if any(not isinstance(observation[k], str) or not observation[k].strip() for k in ('source', 'query_ref')):
         raise ValueError('source and query_ref must be non-empty text')
-    if observation['metric'].endswith('_listeners') and from_ga4(observation):
+    if observation['metric'] in LISTENER_METRICS and from_ga4(observation):
         raise ValueError('GA4 landings are web sessions, never listeners; a listener count must come '
                          'from the product export')
     if 'creative_id' in observation:

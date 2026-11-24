@@ -165,7 +165,7 @@ class CardTests(unittest.TestCase):
         for words in ('Measurement Specialist', 'Google Analytics 4', 'G-W2QL8RKFJ1', 'fulltime.fm',
                       'Control Center', 'ga4_landings', 'unused fallbacks', 'engine/ga4.py', 'never listeners',
                       'D7 is still open', 'creative ID', 'share-token export', 'brand_post_new_listeners',
-                      'share_arrived_new_listeners', 'interval', 'engine.attribution.by_creative()',
+                      'attributed_new_completers', 'interval', 'engine.attribution.by_creative()',
                       'engine.control_center.measurement_lines()', 'Turn a GA4 row into a listener'):
             with self.subTest(words=words):
                 self.assertIn(words, card)

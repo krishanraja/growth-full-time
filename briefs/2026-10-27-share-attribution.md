@@ -1,5 +1,7 @@
 # Brief for full-time: share links that can be counted (27 October 2026)
 
+> Note (2026-11-24): `share_arrived_new_listeners` below is the North Star's retired v2 name. The one name is `attributed_new_completers`, the key Control Center registers.
+
 For a full-time session, once Krish approves this brief. Growth does not change the product; this is the handoff. Plan: [ENGINE-V2](../docs/ENGINE-V2.md), phase 1.
 
 ## Why

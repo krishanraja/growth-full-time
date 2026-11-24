@@ -178,7 +178,7 @@ class ReadinessTests(unittest.TestCase):
         self.assertIn('no verdicts', formats.readiness(other_format, 'take_clip', LOCK_A)['reason'])
 
     def test_post_live_metrics_are_never_inputs(self):
-        live_numbers = {'views': 10 ** 6, 'shares': 5000, 'completion_rate': 0.97, 'share_arrived_new_listeners': 900}
+        live_numbers = {'views': 10 ** 6, 'shares': 5000, 'completion_rate': 0.97, 'attributed_new_completers': 900}
         boosted = [dict(v, **live_numbers) for v in three_clean()]
         self.assertEqual(formats.readiness(boosted, 'take_clip', LOCK_A), formats.readiness(three_clean(), 'take_clip', LOCK_A))
         edited = three_clean() + [verdict('synthetic-fixture-004', 5, 'edit', **live_numbers)]

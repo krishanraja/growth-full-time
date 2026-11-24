@@ -4,7 +4,7 @@
   "window": {"start": "2026-11-02", "end": "2026-11-08", "tz": "Europe/London"},
   "mode": "proof",
   "objectives": [
-    {"key": "share_arrived_new_listeners", "target": 16},
+    {"key": "attributed_new_completers", "target": 16},
     {"key": "marketing_cash_gbp", "target": 0}
   ],
   "fixtures": [
@@ -40,7 +40,7 @@
   ],
   "experiments": [
     {"experiment_id": "synthetic-hook-first-second", "arm_unit": "matchweek",
-     "metric": "share_arrived_new_listeners", "min_matchweeks": 2,
+     "metric": "attributed_new_completers", "min_matchweeks": 2,
      "stop_rule": "Stop after two matchweeks with at least 20 events in each arm, or at the first owner reject that names the hook."}
   ],
   "learnings_applied": []

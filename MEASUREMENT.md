@@ -100,7 +100,7 @@ The Measurement Analyst (`engine/attribution.py`) owns the North Star count. It
 reads aggregates only, under every rule above. Missing, stale and measured zero
 stay different: a count nobody has measured is null with its reason, never zero.
 
-**The North Star: `share_arrived_new_listeners`.** New listeners a week who
+**The North Star: `attributed_new_completers`.** New listeners a week who
 arrived through a fan's shared link or clip (`docs/NORTH_STAR.md`). The mechanism
 is the 7-day first-touch join in `briefs/2026-10-27-share-attribution.md`, and the
 two documents say the same thing:
@@ -156,7 +156,7 @@ seven complete London days ending yesterday
 
 ```json
 {"schema_version": 1, "product": "fulltime", "observations": [
-  {"metric": "share_arrived_new_listeners", "value": 7, "source": "...", "query_ref": "...",
+  {"metric": "attributed_new_completers", "value": 7, "source": "...", "query_ref": "...",
    "window_start": "2026-10-19", "window_end": "2026-10-25",
    "observed_at": "2026-10-26T07:30:00+00:00", "status": "measured"},
   {"metric": "brand_post_new_listeners", "value": 1, "source": "...", "query_ref": "...",
@@ -192,7 +192,7 @@ it folded rows into `(other)`, is not sent at all, as `engine/ga4.py` refuses it
 sent, it would report hidden creatives as untagged or as zero. The shape has no
 field to carry that limitation, and a file that adds one is refused.
 
-**Objectives.** Control Center receives `share_arrived_new_listeners` and
+**Objectives.** Control Center receives `attributed_new_completers` and
 `brand_post_new_listeners` for the seven complete London days ending yesterday. A
 measured total row for exactly that week gives the value, with its interval in the
 reason. Otherwise the value is null and the reason says which: no product export
@@ -202,8 +202,9 @@ week). Only the listener rows are read. An invalid row for exactly that week
 refuses the reading; an invalid row for another week is left out, so an old row
 never blocks a clean week. Beside the North Star, the reason quotes the week's
 newest untokenised count only when it is measured and no more than 48 hours old;
-otherwise it says missing or stale. The existing `attributed_new_completers`
-objective keeps reporting until Control Center registers the new keys.
+otherwise it says missing or stale. `attributed_new_completers` is the one name of
+the North Star in code, objectives, NOW.md and Control Center (2026-11-24); the
+v2 name `share_arrived_new_listeners` was never registered and is retired.
 
 **The interval rule.** Weekly counts are treated as Poisson. A measured count is
 reported with a rough 95% interval: the count plus or minus twice its square root,

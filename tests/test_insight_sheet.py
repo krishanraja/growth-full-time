@@ -193,8 +193,8 @@ class Sheet(unittest.TestCase):
 class Seed(unittest.TestCase):
     def campaign(self, with_objective=True):
         value = spec.load(EXAMPLE)
-        if with_objective:
-            value['objectives'].append({'key': 'attributed_new_completers', 'target': 30})
+        if not with_objective:
+            value['objectives'] = [o for o in value['objectives'] if o['key'] != 'attributed_new_completers']
         return value
 
     def test_seed_needs_the_objective_the_lead_is_measured_by(self):
@@ -256,9 +256,7 @@ class Hook(unittest.TestCase):
         return self.run_cli('spec', 'propose', path, '--expires-at', '2026-11-30T08:00:00+00:00', *extra)
 
     def campaign(self):
-        value = spec.load(EXAMPLE)
-        value['objectives'].append({'key': 'attributed_new_completers', 'target': 30})
-        return self.write('spec.json', value)
+        return self.write('spec.json', spec.load(EXAMPLE))
 
     def test_without_insight_the_output_is_byte_identical_to_before(self):
         path = self.campaign()
