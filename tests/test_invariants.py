@@ -479,14 +479,18 @@ class RuleTests(unittest.TestCase):
         control = (WORKFLOWS / 'control-center.yml').read_text(encoding='utf-8')
         self.assertNotIn('git push', control)
         self.assertNotIn('contents: write', control)
-        # check.yml may push only from its closeout fold, which runs on a push to main (never on a
-        # schedule) and writes only NOW.md, now-notes/ and the history log (Ruling, Krish, 2026-10-28).
+        # check.yml never pushes. Only the closeout fold does, when something reaches main (a push,
+        # a finished Auto-merge, or by hand), never on a schedule, and it writes only NOW.md,
+        # now-notes/ and the history log (Ruling, Krish, 2026-10-28).
         check = (WORKFLOWS / 'check.yml').read_text(encoding='utf-8')
-        before, fold = check.split('\n  fold:\n', 1)
-        self.assertNotIn('git push', before)
-        self.assertNotIn('contents: write', before)
+        self.assertNotIn('git push', check)
+        self.assertNotIn('contents: write', check)
         self.assertNotIn('schedule', check)
-        self.assertIn("if: github.event_name == 'push' && github.ref == 'refs/heads/main'", fold)
+        fold = (WORKFLOWS / 'closeout-fold.yml').read_text(encoding='utf-8')
+        self.assertNotIn('schedule', fold)
+        self.assertRegex(fold, r'push:\n    branches: \[main\]')
+        self.assertIn('workflows: ["Auto-merge"]', fold)
+        self.assertIn("github.event.workflow_run.conclusion == 'success'", fold)
         self.assertEqual(re.findall(r'git add\s+(.+)', fold), ['-A -- NOW.md now-notes docs/history/LOG.md'])
 
     def test_doc20_no_workflow_uploads_an_artifact(self):
