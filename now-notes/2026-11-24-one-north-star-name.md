@@ -1,4 +1,0 @@
-Status: The North Star has one name, `attributed_new_completers`, in code, specs, objectives, NOW.md, MEASUREMENT.md and the revenue and insight desks. It is the key reporting.py sends and Control Center registers; the v2 name `share_arrived_new_listeners` in engine/attribution.py was never registered and is retired (the dated briefs keep it with a note). GA4 rows are refused for an explicit set of listener metrics, the North Star included, instead of by a `_listeners` suffix.
-Changed: engine/attribution.py, engine/measurements.py, engine/spec.py, specs/campaign.schema.json, the synthetic example, MEASUREMENT.md, docs/ENGINE-V2.md, tests and the propose golden file.
-Next: full-time exports one measured whole-week `attributed_new_completers` row, and MEASUREMENT.md's two join descriptions (utm tags at the top, the share token's 7-day first touch below) are settled to one with full-time.
-North Star check (2026-11-24): holds.

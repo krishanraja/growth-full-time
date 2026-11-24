@@ -9,6 +9,25 @@ hand. Nothing in this file describes current behaviour; `NOW.md` and `README.md`
 
 Moved verbatim from `NOW.md` (closeout fold, to keep NOW.md inside the audit's limits).
 
+From "What changed recently":
+
+- 2026-10-27: archived the full private two-ad session and creative baseline to
+  Drive, verified local rebuild and Drive file identity/size readback, and set a
+  portable start-here path. The Liverpool ending, accents and TV music remain
+  subject to owner listening. See [current handover](../../HANDOVER-2026-10-27-CREATIVES.md).
+- 2026-10-26: implemented versioned creative standards, isolated composition,
+  scope checks, improvement/regression gates, exact owner promotion and verified
+  private bundle recovery. See [handover](../../HANDOVER-2026-10-26.md).
+
+From "Where it is right now":
+
+- the branch sweep takes an approved list (branch@sha) on a hand run and deletes each named branch only at that exact commit, skipping and logging anything else; the weekly run is unchanged. Copied from ai-harness's canonical script and workflow. (2026-11-15)
+- our own pull requests (Krish or the Actions bot, branch in this repository, ready, at the commit that passed) now merge themselves when every "check" run on that commit is green (.github/workflows/auto-merge.yml, rule .github/scripts/auto-merge-pick.jq, tested). Forks, drafts and strangers wait for a person. (2026-11-14)
+
+## 2026-11-24
+
+Moved verbatim from `NOW.md` (closeout fold, to keep NOW.md inside the audit's limits).
+
 From "Where it is right now":
 
 - docs/control-center/ is Control Center's protocol bundle 1.33.0, byte for byte (bundle_sha256 4b7175a8aebbb8979eaefbeea1b7f0f44f2cffa0bbba9cea341da784fe7fde4d), the last protocol version of 14 November. (2026-11-14)
