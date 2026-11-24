@@ -1264,7 +1264,7 @@ def self_test():
     t('the hourly sync commits as automation, so NOW.md is never marked unreconciled by it',
       'git commit -m "chore(heartbeat): sync full-time' in sync_flow)
     from engine import insight_sheet
-    t('the insight desk adapter holds: humour unavailable, connector-only divergent, sheets in local/, '
+    t('the insight desk adapter holds: humour and divergent through Control Center, sheets in local/, '
       'a measurement idea first (config/insight-desk.json)',
       insight_sheet.adapter_errors(insight_sheet.load_adapter()) == [])
     revenue = json.loads(Path(HERE, 'config', 'revenue-desk.json').read_text(encoding='utf-8'))
@@ -1299,6 +1299,8 @@ ENGINE_HELP = """engine commands (python3 growth.py <command> --help for each):
   dispatch CARD            a Codex task card, behind the allowance guard
   audience actions|plan|followers   brand-profile actions within platform rules
   invariants check         every invariant in invariants/registry.json
+  divergent OP             divergent-thinker through Control Center: score and record free, paid moves capped
+  humour check|doctor      humour-engine's reading of a caption through Control Center; a check, never a send
   links audit URL|--pack F  read-only: tracked links keep their tags when they land
   learning plan|cost       how long a test needs, and cost per event with its band
   ga4 doctor|report|authorize   the fallback Google Analytics reader
@@ -1313,6 +1315,14 @@ def main():
     if len(sys.argv) > 1 and sys.argv[1] == 'closeout':
         from engine.closeout import command as closeout_command
         raise SystemExit(closeout_command(sys.argv[2:]))
+    if len(sys.argv) > 1 and sys.argv[1] in ('divergent', 'humour'):
+        # divergent-thinker and humour-engine at will, through Control Center on this engine's own bearer.
+        from engine import control_center as cc
+        tool = __import__('engine.' + sys.argv[1], fromlist=['command'])
+
+        def client():
+            return cc.Client(cc.base_url(), cc.load_token(LOCAL))
+        raise SystemExit(tool.command(sys.argv[2:], client))
     if len(sys.argv) > 1 and sys.argv[1] in ENGINE_COMMANDS:
         from engine.cli import main as operations_main
         return operations_main(sys.argv[1:], sys.modules[__name__])

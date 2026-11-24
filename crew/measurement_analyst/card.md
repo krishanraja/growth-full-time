@@ -7,7 +7,7 @@ Crew card (docs/ENGINE-V2.md, section 3), the Measurement Specialist: it counts 
 **Runner.** Claude, reading aggregates only. Nothing here posts, sends or spends.
 
 **Owns.** Three sources, never mixed:
-- The product's share-token export: `share_arrived_new_listeners` (first finished listen within 7 days of a share token, first touch wins), with `untokenised_new_listeners` reported apart.
+- The product's share-token export: `attributed_new_completers` (first finished listen within 7 days of a share token, first touch wins), with `untokenised_new_listeners` reported apart.
 - Brand-post arrivals by creative ID (`utm_content`), from the same export: `brand_post_new_listeners`.
 - Google Analytics 4, installed on fulltime.fm (property G-W2QL8RKFJ1) and visible to Control Center. Ruling 15: it comes from Control Center, as an aggregate export in the daily directive's `ga4_landings`, once Control Center builds the read (briefs/2026-10-27-control-center-measurement.md). Krish sets nothing up; `engine/ga4.py` and docs/GA4-ACCESS.md stay as unused fallbacks. New users and sessions by source, medium, campaign and creative ID. Web landings only, never listeners. Consent item D7 is still open; reading aggregates does not close it.
 

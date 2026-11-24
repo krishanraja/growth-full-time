@@ -82,10 +82,10 @@ class Adapter(unittest.TestCase):
     def test_the_committed_adapter_holds(self):
         self.assertEqual(insight_sheet.adapter_errors(insight_sheet.load_adapter()), [])
 
-    def test_the_adapter_refuses_humour_and_a_wrong_namespace(self):
+    def test_the_adapter_refuses_humour_off_its_route_and_a_wrong_namespace(self):
         adapter = insight_sheet.load_adapter()
         bad = copy.deepcopy(adapter)
-        bad['humour']['allowed'] = True
+        bad['humour']['route'] = 'connector'
         self.assertTrue(any('humour' in e for e in insight_sheet.adapter_errors(bad)))
         bad = copy.deepcopy(adapter)
         bad['divergent']['namespace'] = 'growth-heartside:ideas'
@@ -122,9 +122,12 @@ class Sheet(unittest.TestCase):
         self.assertTrue(any('NOW.md says U4' in e for e in errors))
         self.assertTrue(any('measurement ideas only' in e for e in errors))
 
-    def test_humour_consult_and_another_venture_are_refused(self):
+    def test_humour_consult_only_when_allowed_and_another_venture_is_refused(self):
         value = sheet(consults=[{'engine': 'humour-engine', 'op': 'check', 'result': 'pass', 'ref': 'x'}])
-        self.assertTrue(any('humour engine is unavailable' in e for e in insight_sheet.validate(value, state=U4)))
+        self.assertFalse(any('humour engine is unavailable' in e for e in insight_sheet.validate(value, state=U4)))
+        closed = copy.deepcopy(insight_sheet.load_adapter())
+        closed['humour']['allowed'] = False
+        self.assertTrue(any('humour engine is unavailable' in e for e in insight_sheet.engine_errors(value, closed, U4)))
         value = sheet(venture='heartside', repo='krishanraja/growth-heartside')
         self.assertTrue(any('not this engine' in e for e in insight_sheet.validate(value, state=U4)))
 
@@ -193,8 +196,8 @@ class Sheet(unittest.TestCase):
 class Seed(unittest.TestCase):
     def campaign(self, with_objective=True):
         value = spec.load(EXAMPLE)
-        if with_objective:
-            value['objectives'].append({'key': 'attributed_new_completers', 'target': 30})
+        if not with_objective:
+            value['objectives'] = [o for o in value['objectives'] if o['key'] != 'attributed_new_completers']
         return value
 
     def test_seed_needs_the_objective_the_lead_is_measured_by(self):
@@ -256,9 +259,7 @@ class Hook(unittest.TestCase):
         return self.run_cli('spec', 'propose', path, '--expires-at', '2026-11-30T08:00:00+00:00', *extra)
 
     def campaign(self):
-        value = spec.load(EXAMPLE)
-        value['objectives'].append({'key': 'attributed_new_completers', 'target': 30})
-        return self.write('spec.json', value)
+        return self.write('spec.json', spec.load(EXAMPLE))
 
     def test_without_insight_the_output_is_byte_identical_to_before(self):
         path = self.campaign()

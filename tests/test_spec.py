@@ -68,8 +68,8 @@ class VocabularyTests(unittest.TestCase):
             self.assertEqual(growth.PREFIX[spec.CHANNEL_PLATFORM[channel]], spec.CHANNEL_PREFIX[channel])
         self.assertEqual(spec.FORMATS, ('take_clip', 'morning_card', 'row', 'match_ad'))
         self.assertEqual(spec.MODES, ('proof', 'live'))
-        self.assertEqual(spec.OBJECTIVE_KEYS, ('share_arrived_new_listeners', 'brand_post_new_listeners',
-                                               'marketing_cash_gbp', 'attributed_new_completers'))
+        self.assertEqual(spec.OBJECTIVE_KEYS, ('attributed_new_completers', 'brand_post_new_listeners',
+                                               'marketing_cash_gbp'))
         self.assertEqual(set(spec.pundit_ids()), set(growth.PUNDITS))
 
     def test_the_schema_file_describes_the_same_shape(self):
@@ -105,7 +105,7 @@ class ValidateTests(unittest.TestCase):
         self.assertEqual((value['run_id'], value['mode']), ('fulltime:2026-W45', 'proof'))
         self.assertEqual(value['window']['start'], '2026-11-02')
         targets = {o['key']: o['target'] for o in value['objectives']}
-        self.assertEqual(targets['share_arrived_new_listeners'], 16)
+        self.assertEqual(targets['attributed_new_completers'], 16)
         self.assertEqual(targets['marketing_cash_gbp'], 0)
         self.assertEqual([f['format_id'] for f in value['formats']], list(spec.FORMATS))
         self.assertEqual(len(value['fixtures']), 2)
@@ -156,7 +156,7 @@ class ValidateTests(unittest.TestCase):
                  (lambda v: v.__setitem__('run_id', 'fulltime:2026-W45\n'), 'fulltime:YYYY-Www'),
                  (lambda v: v['fixtures'][0].__setitem__('kickoff', '2027-03-13T15:00:00+00:00'),
                   'outside the spec window'),
-                 (lambda v: v.__setitem__('objectives', []), 'must include share_arrived_new_listeners'),
+                 (lambda v: v.__setitem__('objectives', []), 'must include attributed_new_completers'),
                  (lambda v: v['objectives'].pop(), 'must include marketing_cash_gbp')]
         for change, expected in cases:
             errors = errors_for(change)
@@ -166,7 +166,7 @@ class ValidateTests(unittest.TestCase):
     def test_mode_and_objectives(self):
         cases = [(lambda v: v.__setitem__('mode', 'test'), 'spec.mode'),
                  (lambda v: v['objectives'].append({'key': 'views', 'target': 1}), 'is not one of'),
-                 (lambda v: v['objectives'].append({'key': 'share_arrived_new_listeners', 'target': 3}),
+                 (lambda v: v['objectives'].append({'key': 'attributed_new_completers', 'target': 3}),
                   'named twice'),
                  (lambda v: v['objectives'][0].__setitem__('target', -1), '0 or more'),
                  (lambda v: v['objectives'][0].__setitem__('target', True), '0 or more'),

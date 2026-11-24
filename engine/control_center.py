@@ -41,6 +41,8 @@ DEFAULT_URL = 'https://controlcenter.krishraja.com'
 TOKEN_ENV = 'CONTROL_CENTER_ENGINE_TOKEN'
 URL_ENV = 'CONTROL_CENTER_URL'
 TIMEOUT = 20
+DIVERGE_TIMEOUT = 300   # a full divergent-thinker run makes about 25 model calls inside Control Center's 300 s
+HUMOUR_TIMEOUT = 150    # a humour comprehension call takes longer than the protocol's 20 s
 LIMIT = 1_048_576
 MESSAGES = {
     'missing_token': 'Control Center bearer unavailable: set CONTROL_CENTER_ENGINE_TOKEN or write it to '
@@ -66,13 +68,18 @@ MESSAGES = {
 }
 
 
-class ControlCenterError(Exception):
-    """A lower_snake code, never a message, body, URL or credential."""
+SERVER_CODE = re.compile(r'^[a-z][a-z0-9_]{0,63}$')
 
-    def __init__(self, code, status=None):
+
+class ControlCenterError(Exception):
+    """A lower_snake code, never a message, body, URL or credential. server_code is Control
+    Center's own lower_snake reason when it gave one (daily_diverge_cap_reached, engine_held)."""
+
+    def __init__(self, code, status=None, server_code=None):
         super().__init__(code)
         self.code = code
         self.status = status
+        self.server_code = server_code if isinstance(server_code, str) and SERVER_CODE.match(server_code) else None
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -137,7 +144,7 @@ class Client:
     def __repr__(self):
         return 'Client(<redacted>)'
 
-    def _call(self, method, path, body=None, headers=None):
+    def _call(self, method, path, body=None, headers=None, timeout=None):
         data = None
         head = {'Authorization': 'Bearer ' + self._token, 'Accept': 'application/json',
                 'User-Agent': 'growth-fulltime (+https://github.com/krishanraja/growth-fulltime)'}
@@ -147,7 +154,7 @@ class Client:
         head.update(headers or {})
         request = urllib.request.Request(self._base + path, data=data, headers=head, method=method)
         try:
-            with self._opener.open(request, timeout=self._timeout) as response:
+            with self._opener.open(request, timeout=timeout or self._timeout) as response:
                 status, raw = response.status, response.read(LIMIT + 1)
         except urllib.error.HTTPError as error:
             status = error.code
@@ -178,6 +185,37 @@ class Client:
         if status >= 500:
             return ControlCenterError('server_error', status)
         return ControlCenterError(STATUS_CODES.get(status, 'unexpected_status'), status)
+
+    def _routed(self, path, body=None, method='POST', timeout=None):
+        """One call to an engine route that answers {ok: true, ...}; a refusal keeps Control Center's own code."""
+        status, payload = self._call(method, path, body, timeout=timeout)
+        if 200 <= status < 300 and isinstance(payload, dict) and payload.get('ok') is True:
+            return payload
+        error = self._refuse(status, payload) if status >= 300 else ControlCenterError('bad_response', status)
+        if isinstance(payload, dict):
+            error.server_code = (payload.get('error') if isinstance(payload.get('error'), str)
+                                 and SERVER_CODE.match(payload['error']) else None)
+        raise error
+
+    def capabilities(self):
+        """What Control Center serves this engine (features.divergent, features.humour). Reads only."""
+        return self._routed('capabilities', method='GET')
+
+    def divergent(self, body):
+        """One divergent-thinker call through Control Center (POST divergent, features.divergent): ideas, or a score
+        of this engine's own words against the obvious ones. score and record make no model call; diverge takes up
+        to four minutes. It approves, sends and posts nothing (engine/divergent.py)."""
+        wait = DIVERGE_TIMEOUT if isinstance(body, dict) and body.get('op') == 'diverge' else None
+        return self._routed('divergent', body, timeout=wait)
+
+    def humour(self, call):
+        """One humour-engine comprehension call through Control Center (POST humour, features.humour): the
+        published prompt and forced tool, Control Center's key and model, capped per day. A reading only
+        (engine/humour.py)."""
+        result = self._routed('humour', call, timeout=HUMOUR_TIMEOUT)
+        if not isinstance(result.get('payload'), dict):
+            raise ControlCenterError('bad_humour')
+        return result
 
     def attempt(self, record):
         status, payload = self._call('POST', 'attempts', record)
@@ -468,8 +506,8 @@ def execute(client, command, run_id, work, since):
 # ---------------------------------------------------------------------------
 def measurement_lines(local, today, rows=None, directive=None):
     """The North Star readings and Google Analytics landings, as activity lines for
-    Control Center. They stay out of the objectives until Control Center registers
-    the new keys (briefs/2026-10-27-control-center-measurement.md), and out of the
+    Control Center. The objective itself is reporting.objectives' attributed_new_completers,
+    so these stay activity lines (briefs/2026-10-27-control-center-measurement.md), and out of the
     printed summary, because the runner's log is public. Landings come from Control
     Center itself when its directive carries ga4_landings (Krish, 2026-10-27: "just
     get google analytics data from control center"), else from local/ga4/."""
@@ -587,8 +625,10 @@ def max_actions(directive):
     return min(3, value) if type(value) is int and value >= 0 else 3
 
 
-def workspace_work(growth, mode, report_mode, offline, observations, require_existing):
-    """The morning batch or weekly review in the persistent workspace, mapped to a report."""
+def workspace_work(growth, mode, report_mode, offline, observations, require_existing, client=None):
+    """The morning batch or weekly review in the persistent workspace, mapped to a report. With a client,
+    divergent-thinker scores the prepared captions against the published ones and records what went out
+    (engine/divergent.py; zero model calls, dormant until Control Center serves it)."""
     def work(directive):
         from .runner import run
         journal = History(Path(growth.LOCAL) / 'engine')
@@ -638,6 +678,13 @@ def workspace_work(growth, mode, report_mode, offline, observations, require_exi
             activity.append(line)
         activity += head
         activity += measurement_lines(growth.LOCAL, today, saved['observations'], directive)
+        if client is not None:
+            from . import divergent
+            try:
+                activity += divergent.batch_lines(client, pack['items'], saved['creatives'],
+                                                  (today - dt.timedelta(days=divergent.RECORD_DAYS)).isoformat())
+            except (TypeError, ValueError, KeyError, AttributeError) as error:
+                activity.append('divergent-thinker: not consulted (' + type(error).__name__ + ')')
         if not is_held:     # held means no asks of him (Ruling, Krish, 2026-10-29), so no action list either
             activity += action_lines(growth, today, state, directive)
         degraded = [] if record.get('rail') is not None else ['The live rail was not read; fulltime.fm did not answer.']
@@ -842,7 +889,7 @@ def main(args, growth):
         kind = 'report' if args.target == 'weekly' else 'daily'
         summary = execute(client, args.target, reporting.run_id_for(today, kind),
                           workspace_work(growth, args.target, report_mode, args.offline, args.observations,
-                                         args.require_existing_history), since)
+                                         args.require_existing_history, client), since)
     summary['mode'] = report_mode
     decided = summary.get('decisions')
     instructions = (decided or {}).get('instructions') or []

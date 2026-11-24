@@ -23,9 +23,8 @@ CHANNEL_PLATFORM = {'tiktok': 'tiktok', 'ig_reels': 'instagram', 'ig_feed': 'ins
 CHANNEL_PREFIX = {'tiktok': 'TT', 'ig_reels': 'IG', 'ig_feed': 'IG', 'yt_shorts': 'YT',
                   'threads': 'TH', 'x': 'X', 'facebook': 'FB', 'whatsapp_channel': 'WC'}
 MODES = ('proof', 'live')
-OBJECTIVE_KEYS = ('share_arrived_new_listeners', 'brand_post_new_listeners', 'marketing_cash_gbp',
-                  'attributed_new_completers')
-REQUIRED_OBJECTIVES = ('share_arrived_new_listeners', 'marketing_cash_gbp')   # plan section 1
+OBJECTIVE_KEYS = ('attributed_new_completers', 'brand_post_new_listeners', 'marketing_cash_gbp')
+REQUIRED_OBJECTIVES = ('attributed_new_completers', 'marketing_cash_gbp')   # plan section 1
 ROLES = ('push', 'derived')
 ARM_UNITS = ('matchweek', 'match')
 TIMEZONE = 'Europe/London'

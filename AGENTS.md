@@ -151,11 +151,17 @@ ai-harness (`insight-desk`, read live with `get_skill` once admitted; until
 then a local checkout's `candidates/insight-desk/`, and a failed read means no
 sheet). Full Time's adapter is `config/insight-desk.json`:
 
-- **Humour is unavailable.** No humour engine call; pundit voice stays with
-  full-time and the creative system.
-- **Divergent runs through the connector only**, in `growth-fulltime:ideas`.
-  This repository has no client, so a run without the connector records
-  `unavailable`, never `pass`.
+- **Humour is a check through Control Center.** `python3 growth.py humour
+  check` reads a caption through Control Center's humour route on this engine's
+  bearer (`engine/humour.py`: at_person, needs_explaining, forced); it never
+  writes or rewrites a joke, pundit voice stays with full-time and the creative
+  system, and unavailable is never a pass.
+- **Divergent runs through Control Center**, in `growth-fulltime:ideas` and
+  `growth-fulltime:copy` (`engine/divergent.py`), dormant until capabilities
+  serve `features.divergent`. The morning batch only scores its captions
+  against the published ones and records what went out, with no model call.
+  Paid moves run at will (`python3 growth.py divergent <op>`), refuse while
+  held, and stay inside Control Center's daily caps; a cap answer is final.
 - **The first sheet is a measurement idea.** While NOW.md says U4 with no
   reading, every idea on the sheet is a measurement idea.
 - **Sheets live in `local/insight/`**, never committed. `engine/insight_sheet.py`

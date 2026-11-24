@@ -84,7 +84,7 @@ There is one **weekly campaign spec** per matchweek (Monday to Sunday, London ti
 |---|---|
 | `run_id`, `window` | `fulltime:YYYY-Www`; start and end in Europe/London |
 | `mode` | `proof` or `live`. `live` is refused unless the format is ready, ORGANIC and D7 are in force, and the brand identity is verified |
-| `objectives[]` | `share_arrived_new_listeners` (the North Star, with this week's ladder target), `brand_post_new_listeners` (alpha testers from brand posts) and `marketing_cash_gbp` (0). The existing `attributed_new_completers` key keeps reporting until Control Center registers the new keys (handoff) |
+| `objectives[]` | `attributed_new_completers` (the North Star, with this week's ladder target), `brand_post_new_listeners` (alpha testers from brand posts) and `marketing_cash_gbp` (0). `attributed_new_completers` is the one name Control Center registers; `brand_post_new_listeners` is still a handoff |
 | `fixtures[]` | `fixture_ref`, clubs, `rivalry`, `rank` (computed by the Match Clock; Krish may strike one) |
 | `formats[]` | `format_id`, `lock_version` (a hash pin), `max_per_matchday`, `channels[]`, `pundits_allowed[]` |
 | `channels[]` | channel, role (push or derived), `identity_ref`, `cap_per_day` |

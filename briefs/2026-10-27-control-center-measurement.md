@@ -1,5 +1,7 @@
 # Brief for Control Center: Google Analytics, new objectives and handcrafted mode (27 October 2026)
 
+> Note (2026-11-24): `share_arrived_new_listeners` below is the North Star's retired v2 name. The one name is `attributed_new_completers`, the key Control Center registers.
+
 For a Control Center session, once Krish approves. Growth does not implement anything in Control Center (AGENTS.md); this is the handoff. Plan: [ENGINE-V2](../docs/ENGINE-V2.md).
 
 ## 1. Google Analytics 4 for the Measurement Analyst
