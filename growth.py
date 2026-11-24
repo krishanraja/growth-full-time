@@ -1267,6 +1267,13 @@ def self_test():
     t('the insight desk adapter holds: humour unavailable, connector-only divergent, sheets in local/, '
       'a measurement idea first (config/insight-desk.json)',
       insight_sheet.adapter_errors(insight_sheet.load_adapter()) == [])
+    revenue = json.loads(Path(HERE, 'config', 'revenue-desk.json').read_text(encoding='utf-8'))
+    t('the revenue desk adapter is measure first, with no spend authority and every named source present '
+      '(config/revenue-desk.json)',
+      revenue.get('schema') == 'revenue-desk-adapter/1' and revenue.get('stage') == 'measure first'
+      and revenue.get('spend_authority') == 'none'
+      and revenue.get('reading_plan', {}).get('metric') == 'attributed_new_completers'
+      and all(os.path.exists(os.path.join(HERE, r['path'])) for s in revenue['money_path'] for r in s['read']))
     ignored = Path(HERE, '.gitignore').read_text(encoding='utf-8')
     t('local/ is never committed (the repository is public)', re.search(r'^/?local/?$', ignored, re.M) is not None)
     print(f'growth-fulltime self-test passed: {n} checks')

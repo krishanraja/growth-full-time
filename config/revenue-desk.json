@@ -1,0 +1,78 @@
+{
+  "schema": "revenue-desk-adapter/1",
+  "_about": "How this engine runs the ai-harness revenue-desk method (Ruling, Krish, 2026-11-24: build the revenue desk as recommended; measure first where nothing is counted; thresholds binding only after his yes). The method holds the steps; this file names what is Full Time's own: where each step from work to money would be read here. It holds no figures and no people. Checked by tests/test_revenue_desk.py and the self-test. Nothing here posts, sends, schedules or spends.",
+  "method": {
+    "name": "revenue-desk",
+    "home": "krishanraja/ai-harness",
+    "read": "get_skill('revenue-desk') once admitted; until then a local ai-harness checkout's skills/revenue-desk/. A failed read means no sheet, and the engine runs as it always has.",
+    "status": "candidate",
+    "runner": "krishanraja/strategist runs the desk in its existing daily watch and Sunday board; this engine runs nothing new."
+  },
+  "venture": "fulltime",
+  "repo": "krishanraja/growth-fulltime",
+  "north_star": {
+    "doc": "docs/NORTH_STAR.md",
+    "state_line": "NOW.md",
+    "metric": "attributed_new_completers"
+  },
+  "stage": "measure first",
+  "stage_why": "NOW.md says U4, unmeasured: no counted step exists, there are no buyers, and Full Time has no paid step today. So the desk runs no money path rule, no reach check and no test card. Its one output is the reading plan below for attributed_new_completers.",
+  "blind_rule": "A step with no reading, an unreadable one, or one older than 7 days is blind, recorded with its reason and never as zero. A GA4 landing is never a listener.",
+  "money_path": [
+    {
+      "step": "shared_take",
+      "counts": "takes posted with a tracked link carrying the creative id in utm_content",
+      "stage": "measure_first",
+      "read": [{"path": "growth.py", "function": "tracked"}]
+    },
+    {
+      "step": "landing",
+      "counts": "web landings on fulltime.fm by creative id, a leading signal only",
+      "stage": "measure_first",
+      "read": [{"path": "engine/attribution.py"}, {"path": "engine/ga4.py"}]
+    },
+    {
+      "step": "attributed_new_completer",
+      "counts": "new identities whose first completed show came through a shared link or clip (the North Star number)",
+      "stage": "measure_first",
+      "read": [
+        {"path": "MEASUREMENT.md"},
+        {"path": "engine/measurements.py", "function": "scorecard"},
+        {"path": "engine/reporting.py", "function": "objectives"}
+      ]
+    },
+    {
+      "step": "returner",
+      "counts": "members of a mature cohort of first completers who start another show within seven days",
+      "stage": "measure_first",
+      "read": [{"path": "MEASUREMENT.md"}, {"path": "engine/measurements.py", "function": "scorecard"}]
+    },
+    {
+      "step": "money",
+      "counts": "none: Full Time has no paid step today, and marketing_cash_gbp is cost, never revenue",
+      "stage": "measure_first",
+      "read": []
+    }
+  ],
+  "reading_plan": {
+    "metric": "attributed_new_completers",
+    "owner": "krishanraja/full-time builds the join inside the product and exports only the weekly aggregate; this engine never reads a person",
+    "export": "one weekly aggregate in the version 1 export, product fulltime, fields metric, value, source, query_ref, window_start, window_end, observed_at with its timezone, status; Monday to Sunday, Europe/London",
+    "join": "a new identity's first completed show, joined to the shared link's own tags (utm_source, utm_medium, utm_campaign, utm_content carrying the creative id) as growth.py tracked() writes them",
+    "import": ["python3 growth.py metrics <file>", "python3 growth.py run --observations <file>"],
+    "scored_by": ["engine/measurements.py scorecard", "engine/reporting.py objectives"],
+    "spec": ["MEASUREMENT.md", "briefs/2026-10-27-share-attribution.md", "docs/GET-GOING.md"],
+    "done_when": "one measured whole-week row reaches Control Center as the attributed_new_completers objective; until then it is missing with its reason, never zero",
+    "then": "two counted weeks before any band is proposed; only then does the desk run its money path and reach check here"
+  },
+  "bands": {
+    "status": "assumption",
+    "binding": false,
+    "binding_after": "Krish's yes on the exact bands, recorded with his words",
+    "calibrate_from": "this engine's own counted weeks, never another venture's or an outside benchmark",
+    "per_step": {}
+  },
+  "sheets": "local/revenue/",
+  "spend_authority": "none",
+  "approval_path": "While the engine is held (activation.json or Control Center), no ask reaches his list and anything the desk writes stays local. Once released, the reading plan reaches him only as stage plan behind strategy; his yes approves a plan, never a send, post or spend."
+}
