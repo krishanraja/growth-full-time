@@ -263,9 +263,9 @@ one concurrency group, a ten-minute timeout and no artifacts.
 
 A session that changes this repository leaves one note,
 `now-notes/YYYY-MM-DD-<slug>.md` (`Status:`, optionally `Changed:`, `Next:` and
-one `North Star check (YYYY-MM-DD): holds.` line). When it reaches main, the
-`fold` job in `.github/workflows/check.yml` runs `python3 growth.py closeout
-fold`: the note goes into NOW.md and is deleted, and NOW.md's oldest lines move
+one `North Star check (YYYY-MM-DD): holds.` line). When it reaches main (a
+push, or a merge by Auto-merge), `.github/workflows/closeout-fold.yml` runs
+`python3 growth.py closeout fold`: the note goes into NOW.md and is deleted, and NOW.md's oldest lines move
 verbatim to [docs/history/LOG.md](docs/history/LOG.md) to stay inside the
 harness audit's limits (engine/closeout.py). `python3 growth.py closeout
 check` refuses a note the fold cannot place, in the self-test and in CI.

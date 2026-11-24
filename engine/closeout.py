@@ -10,7 +10,7 @@ now-notes/YYYY-MM-DD-<slug>.md, in the format of ai-harness's closeout hook:
     Next: <the single next action>
     North Star check (YYYY-MM-DD): holds.        (or "...: recalibration proposed. <why>")
 
-When the note reaches main, the fold job in .github/workflows/check.yml runs `growth.py closeout fold`,
+When the note reaches main, .github/workflows/closeout-fold.yml runs `growth.py closeout fold`,
 which writes each note into NOW.md and deletes it:
 
 - its Status goes on top of the dated status bullets under "Where it is right now", below the

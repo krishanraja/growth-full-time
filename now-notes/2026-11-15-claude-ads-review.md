@@ -1,4 +1,0 @@
-Status: paid ads are gated, not banned (Ruling, Krish, 2026-11-15): a paid draft waits on D5, D7, RELEASE and the rail, and D5 is an ask once the engine is released. From the Claude Ads review (docs/CLAUDE-ADS.md), `growth.py links audit` checks read-only that tracked links keep their tags when they land, and `growth.py learning plan|cost` says how long a test needs and what each counted event cost. Its first live run found every show link's share card is the site card. (2026-11-15)
-Changed: Krish asked which Claude Ads capabilities genuinely help Full Time, and said "Full Time does not ban paid ads"; the code had refused the ads channel since 17 October.
-Next: Krish approves the share brief (briefs/2026-10-27-share-attribution.md) so full-time builds per-show share cards (item 6); `growth.py links audit` on a published show link proves it.
-North Star check (2026-11-15): holds.

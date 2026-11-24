@@ -1,0 +1,63 @@
+name: closeout-fold
+
+# A closeout note that reaches main is folded into NOW.md and removed, so pull
+# requests never edit NOW.md at once (Ruling, Krish, 2026-10-28), and NOW.md,
+# which Control Center shows as this engine's state of play, stays current.
+# ai-harness's administration publisher excludes this repository, so the fold
+# is its own (engine/closeout.py).
+#
+# It runs only when something reaches main, never on a timer:
+# - a push to main made by a person;
+# - an Auto-merge run that finished, because a merge made with the Actions
+#   token starts no push workflow, and since 14 Nov every merge is one (notes
+#   sat unfolded from 14 to 24 Nov);
+# - by hand (workflow_dispatch), to fold notes that are already waiting.
+# Every attempt folds afresh from the newest main, so another push landing
+# first never leaves a conflicted NOW.md, and a run with no notes does nothing.
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: ["Auto-merge"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: closeout-fold
+  cancel-in-progress: false
+
+jobs:
+  fold:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      MAIN: ${{ github.event.repository.default_branch }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Fold closeout notes into NOW.md
+        run: |
+          set -uo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            git fetch --quiet origin "$MAIN" && git reset --quiet --hard "origin/$MAIN" || exit 1
+            if ! ls now-notes/*.md >/dev/null 2>&1; then echo "No closeout notes to fold."; exit 0; fi
+            status=0; python3 growth.py closeout fold --head "$(git rev-parse HEAD)" || status=$?
+            if [ -z "$(git status --porcelain -- NOW.md now-notes docs/history/LOG.md)" ]; then exit "$status"; fi
+            git add -A -- NOW.md now-notes docs/history/LOG.md
+            git commit --quiet -m "docs(closeout): fold closeout notes into NOW.md" -m "Written by python3 growth.py closeout fold (engine/closeout.py)."
+            if git push --quiet origin "HEAD:$MAIN"; then exit "$status"; fi
+            sleep $((attempt * 5))
+          done
+          echo "::error::Main kept moving; the notes stay in now-notes/ for the next run."
+          exit 1

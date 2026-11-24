@@ -5,6 +5,22 @@ by the docs steward (`krishanraja/ai-harness`, `docs/steward/RUNBOOK.md`) and by
 hand. Nothing in this file describes current behaviour; `NOW.md` and `README.md` do. Text moved here from
 `NOW.md` keeps its wording verbatim; only its relative links are re-pointed to work from here.
 
+## 2026-11-24
+
+Moved verbatim from `NOW.md` (closeout fold, to keep NOW.md inside the audit's limits).
+
+From "What changed recently":
+
+- 2026-10-23 **The North Star now has a number, a weekly ladder and an urgency rating.** Ruling (Krish, 2026-10-23): every repository chases one aggressive number on a weekly ladder, and urgency U1 to U5 sets how hard it pushes. The number is in `docs/NORTH_STAR.md`; contract: ai-harness `contract/north-star-metric.md`.
+
+From "Where it is right now":
+
+- The fleet audit's repairs landed. The docs say the daily credits task exists and is switched off while held. NOW.md and MEASUREMENT.md name the one weekly aggregate full-time must export for the North Star to be measured. GET-GOING.md has a release checklist (re-copy the protocol, read `ai_answers_detail` first, switch the credits task back on). A hand-started run proved the held report live in Control Center: `held`, 1.20.0, no proposals, one NOT_READY hold. (2026-11-14)
+- Full Time's AI answers are AEO-Engine's, the one AI-answers specialist (Ruling, Krish, 2026-11-12): AEO already researches Full Time every fortnight, and the runner reads its standing from the directive into one line (protocol 1.22.0, engine/ai_answers.py). The protocol copy in docs/control-center/ is Control Center's at 36df34bc (protocol 1.22.0). (2026-11-13)
+- The protocol copy in docs/control-center/ is Control Center's at 212379e1 (1.21.0, the schemas unchanged): its voice_check row lists the 16 channels Control Center accepts, and it says a number objective's target comes from the repository's north-star block; Control Center reads no number objective for this engine (only Legibility, Mindmake, Heartside and Make Your Mind Up have one), so its registered objectives keep their registry targets. The code still speaks 1.20.0 and the engine is still held. (2026-11-12)
+- The docs match the code and the live state, the engine's obsessions quote only Krish's own words, a repeated ack with a new line now updates Control Center (protocol 1.21.0), and closeout notes fold into NOW.md on every merge to main (engine/closeout.py). (2026-11-12)
+- The code speaks Control Center protocol 1.20.0: a run reads Krish's instruction, acks it by id and reports its priorities, obsessions and next steps (`engine/engine_state.py`). The state reached Control Center first in the held run of 14 November; Krish has given this engine no instruction. (2026-11-14)
+
 ## 2026-11-15
 
 Engine v2 merged onto main, keeping main's Control Center report (Ruling, Krish, 2026-11-15). The branch's
