@@ -386,9 +386,12 @@ def compile(spec, verdicts=(), state=None, identities=None, registry=None):
             'channels': copy.deepcopy(spec['channels']), 'payload_sha256': digest(spec)}
 
 
-def proposal(spec, expires_at, registry=None):
+def proposal(spec, expires_at, registry=None, insight=None):
     """Gate G1: the spec as a plan behind the strategy wall, with the spec itself as
-    exact_payload so Krish can amend it. His Clear binds payload_sha256 = digest(spec)."""
+    exact_payload so Krish can amend it. His Clear binds payload_sha256 = digest(spec).
+    insight, from engine.insight_sheet.seed(), names the insight sheet whose lead idea
+    seeds the week; it adds a sentence and an evidence line and never changes the payload.
+    Without it the plan is exactly as before."""
     errors = validate(spec, registry)
     if errors:
         raise ValueError('the spec is not valid: ' + '; '.join(errors))
@@ -402,9 +405,14 @@ def proposal(spec, expires_at, registry=None):
     why = (f'The {spec["mode"]} spec for matchweek {week}: {len(spec["formats"])} formats, '
            f'{len(spec["channels"])} channels, {fixtures} fixture{"s" if fixtures != 1 else ""}. '
            'Clear signs exactly this spec. Nothing posts from it: each matchday comes back as its own post ask.')
+    evidence = [{'label': 'Campaign spec schema', 'url': reporting.REPO_URL + '/blob/main/specs/campaign.schema.json'}]
+    if insight is not None:
+        why = (f'Seeded by insight sheet {insight["sheet_sha256"][:12]}: lead idea {insight["lead"]} '
+               f'({insight["idea_level"]}), measured by {insight["objective_key"] or "the spec objectives"}. ') + why
+        evidence.append({'label': f'Insight sheet {insight["sheet_sha256"]}, skill {insight["harness_skill_sha"][:12]}',
+                         'url': reporting.REPO_URL + '/blob/main/config/insight-desk.json'})
     plan = reporting._proposal(
         f'fulltime-spec-{week}', f'Weekly campaign spec, {week} ({spec["mode"]})', why, 'prepared', 'strategy',
         spec, 'campaign_week_closed', spec['run_id'], objective_key=PROPOSAL_OBJECTIVE, exact_payload=exact,
-        evidence=[{'label': 'Campaign spec schema', 'url': reporting.REPO_URL + '/blob/main/specs/campaign.schema.json'}],
-        expires_at=expires_at)
+        evidence=evidence, expires_at=expires_at)
     return {**plan, 'stage': 'plan', 'parent_proposal_id': None}

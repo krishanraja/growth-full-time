@@ -5,6 +5,15 @@ Newest first. Record his words with the date, then change the job file and
 words, and in `rulings.json` with the full-time decision-log heading that
 records it.
 
+- 2026-11-24: the insight desk is wired.
+  Ruling (Krish, 2026-11-24): the insight desk is the ai-harness insight-desk skill with a thin adapter
+  in each growth engine, all five wired now; no separate repository until the graduation trigger fires.
+  His own typed words are not copied into this public file; the ruling line above is its record.
+  Full Time's adapter is `config/insight-desk.json` (humour unavailable, divergent through the connector
+  only, the first sheet a measurement idea while U4 is unmeasured). `engine/insight_sheet.py` checks a
+  sheet, and `spec propose --insight <sheet>` names its lead on the G1 plan without changing the spec or
+  its digest. Without the flag nothing changes. Nothing was sent, posted or spent.
+
 - 2026-11-15: paid ads are gated, not banned, and the Claude Ads review.
   Ruling (Krish, 2026-11-15): Full Time does not ban paid ads. His words: "Full Time does not ban paid
   ads." The bullet in AGENTS.md that listed ads beside paid creators was a session's reading of his

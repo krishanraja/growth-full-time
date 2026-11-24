@@ -25,4 +25,6 @@ Crew card (docs/ENGINE-V2.md, section 3), loaded for every format: `take_clip`, 
 | The same reason appears twice | Fix the rule (`verdict_analysis()`) |
 | Rubric under 38, or Ethics or Action under 4 | Not handed off |
 
+**Insight desk.** When G1 was seeded by an insight sheet (`spec propose --insight`), its lead idea is the week's angle; every take still passes the take test.
+
 **Lens.** `crew/take_writer/lens.md`.

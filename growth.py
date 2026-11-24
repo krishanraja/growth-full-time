@@ -1263,6 +1263,10 @@ def self_test():
     sync_flow = Path(HERE, '.github', 'workflows', 'sync.yml').read_text(encoding='utf-8')
     t('the hourly sync commits as automation, so NOW.md is never marked unreconciled by it',
       'git commit -m "chore(heartbeat): sync full-time' in sync_flow)
+    from engine import insight_sheet
+    t('the insight desk adapter holds: humour unavailable, connector-only divergent, sheets in local/, '
+      'a measurement idea first (config/insight-desk.json)',
+      insight_sheet.adapter_errors(insight_sheet.load_adapter()) == [])
     ignored = Path(HERE, '.gitignore').read_text(encoding='utf-8')
     t('local/ is never committed (the repository is public)', re.search(r'^/?local/?$', ignored, re.M) is not None)
     print(f'growth-fulltime self-test passed: {n} checks')
