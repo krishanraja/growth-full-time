@@ -1,6 +1,6 @@
 {
   "canon": {
-    "AGENTS.md": "962e02651fe3f341",
+    "AGENTS.md": "1b7cdc83f4f9b91a",
     "NOW.md": "f743f608b29ea17d",
     "docs/00-product.md": "46beed6b2c22ed7a",
     "docs/01-brand.md": "f35e85845d0cfe4c",
@@ -16,12 +16,14 @@
   "canon_added": [],
   "canon_from_index": true,
   "canon_removed": [],
-  "changed_since_last_sync": [],
+  "changed_since_last_sync": [
+    "AGENTS.md"
+  ],
   "commits": [
     {
-      "date": "2026-11-20T11:34:14Z",
-      "sha": "cefc4041ee",
-      "subject": "docs: note where the new page-reading and web-search keys may help (#118)"
+      "date": "2026-11-24T05:01:01Z",
+      "sha": "3f8b4d35cb",
+      "subject": "docs(canon): sync the canon block to v2026.11.23.2 (#120)"
     }
   ],
   "decisions": [
@@ -67,7 +69,7 @@
       "updated": "2026-11-19T02:01:40Z"
     }
   ],
-  "previous_sha": "2f080a3fcb93c922da276e7e612e0663e21c18b0",
+  "previous_sha": "cefc4041ee706043788a79906f6f927ae3318a1d",
   "push": {
     "open": false,
     "why": "no match has 4 of 6 AI Pundits (newest: 1 of 6)"
@@ -192,6 +194,6 @@
       "status": "pending"
     }
   },
-  "sha": "cefc4041ee706043788a79906f6f927ae3318a1d",
-  "synced_at": "2026-11-20T13:04:03+00:00"
+  "sha": "3f8b4d35cba05746f12db7a61a1248a9fc459ece",
+  "synced_at": "2026-11-24T11:03:50+00:00"
 }

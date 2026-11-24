@@ -1,6 +1,6 @@
 # Full Time now
 
-Read from `krishanraja/full-time` at commit `cefc4041ee` and from fulltime.fm on 2026-11-20T13:04:03+00:00 UTC by `python3 growth.py sync`.
+Read from `krishanraja/full-time` at commit `3f8b4d35cb` and from fulltime.fm on 2026-11-24T11:03:50+00:00 UTC by `python3 growth.py sync`.
 Rewritten when a sync finds full-time, its open pull requests, the rail or the feed changed. The full-time repository and the live site are the source of truth; this is a reading of them.
 
 ## Push gate: HOLD
@@ -15,6 +15,12 @@ No match has 4 of 6 AI Pundits (newest: 1 of 6). A push sends fans to a match on
 | Crystal Palace 3-1 Nottingham Forest | 2026-10-11 | 1 of 6 | The Reporter |
 | Manchester City 5-3 Sunderland | 2026-09-20 | 1 of 6 | The Romantic |
 | Tottenham 2-3 Aston Villa | 2026-09-19 | 1 of 6 | The Gaffer |
+
+## Canon changed since the last sync
+
+Read these again before drafting anything:
+
+- changed: `AGENTS.md`
 
 ## Krish's actions
 
@@ -76,7 +82,7 @@ His matchday and plan answers wait in Control Center; `growth.py actions` lists 
 
 ## Recent commits on main
 
-- `cefc4041ee` 2026-11-20 docs: note where the new page-reading and web-search keys may help (#118)
+- `3f8b4d35cb` 2026-11-24 docs(canon): sync the canon block to v2026.11.23.2 (#120)
 
 ## Work in flight (open pull requests)
 
