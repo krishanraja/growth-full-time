@@ -23,6 +23,7 @@ def _add_v2(commands):
     spec.add_argument('operation', choices=['check', 'digest', 'compile', 'propose'])
     spec.add_argument('file'); spec.add_argument('--expires-at')
     spec.add_argument('--queue', action='store_true', help='put the G1 ask on the queue for the next loop report')
+    spec.add_argument('--insight', help='propose: an insight sheet (local/insight/) whose lead idea seeds the week')
     formats = commands.add_parser('formats', help='the format registry and readiness computed from verdicts')
     formats.add_argument('operation', choices=['list', 'readiness', 'lock'])
     formats.add_argument('--verdicts'); formats.add_argument('--spec')
@@ -122,6 +123,8 @@ def _run_v2(args, growth):
     if args.command == 'spec':
         from . import spec
         data = spec.load(args.file)
+        if getattr(args, 'insight', None) and args.operation != 'propose':
+            raise ValueError('--insight seeds a G1 plan, so it goes with spec propose only')
         if args.operation == 'check':
             errors = spec.validate(data)
             if errors:
@@ -141,6 +144,15 @@ def _run_v2(args, growth):
         learned = _learning_errors(growth, data)      # what Krish signs relies only on real learnings
         if learned:
             raise ValueError('the spec is refused: ' + '; '.join(learned))
+        if getattr(args, 'insight', None):              # the insight desk's hook; absent, nothing changes
+            from . import insight_sheet
+            seeded = insight_sheet.seed(data, insight_sheet.load_json(args.insight), root=growth.HERE)
+            proposal = spec.proposal(data, args.expires_at, insight=seeded)
+            if args.queue:
+                from . import gates
+                return {'prepared': True, 'sent': False, 'insight': seeded,
+                        **gates.prepare(growth.LOCAL, 'g1', proposal)}
+            return {'prepared': True, 'sent': False, 'insight': seeded, 'proposal': proposal}
         proposal = spec.proposal(data, args.expires_at)
         if args.queue:
             from . import gates

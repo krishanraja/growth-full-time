@@ -1,0 +1,46 @@
+{
+  "schema": "insight-desk-adapter/1",
+  "_about": "How this engine runs the ai-harness insight-desk skill (Ruling, Krish, 2026-11-24). The skill holds the method; this file names what is Full Time's own. Read by engine/insight_sheet.py and its tests. Nothing here posts, sends, schedules or spends.",
+  "skill": {
+    "name": "insight-desk",
+    "home": "krishanraja/ai-harness",
+    "read": "get_skill('insight-desk') once admitted; until then a local ai-harness checkout's candidates/insight-desk/. A failed read means no sheet, and the engine runs as it always has.",
+    "status": "candidate"
+  },
+  "venture": "fulltime",
+  "repo": "krishanraja/growth-fulltime",
+  "north_star": {
+    "state_line": "NOW.md",
+    "metric": "attributed_new_completers"
+  },
+  "humour": {
+    "allowed": false,
+    "why": "Full Time has no humour engine route. Pundit voice and delivery are owned by krishanraja/full-time and the creative system, never by the desk."
+  },
+  "divergent": {
+    "route": "connector",
+    "namespace": "growth-fulltime:ideas",
+    "tools": ["divergent_score", "divergent_record", "divergent_run"],
+    "scheduled_run": "unavailable",
+    "why": "This repository has no divergent client. Only a session on Krish's account can call the connector; a run without it records unavailable, never pass."
+  },
+  "reads": {
+    "floor": ["COPY.md", "invariants/registry.json"],
+    "copy_doctrine": "COPY.md",
+    "claims": ["rulings.json", "AGENTS.md"],
+    "live": "local/state/",
+    "verdicts": "local/"
+  },
+  "first_sheet": {
+    "idea_level": "measurement",
+    "while": "NOW.md says U4 with no current reading",
+    "why": "Nothing measures the North Star number yet (MEASUREMENT.md), so the only idea worth Krish's time is one that measures it."
+  },
+  "sheets": "local/insight/",
+  "hook": {
+    "command": "python3 growth.py spec propose <spec> --expires-at <iso> --insight <sheet>",
+    "feeds": ["engine/spec.py, the weekly objective", "crew/take_writer"],
+    "default": "Without --insight, spec propose is unchanged."
+  },
+  "approval_path": "G1, the weekly spec, as stage plan behind strategy. While the engine is held (activation.json or Control Center), no ask reaches his list and the sheet stays local."
+}

@@ -142,6 +142,34 @@ going".
   read from docs/NORTH_STAR.md, this file, docs/GET-GOING.md and NOW.md. They
   are never invented; a field with no source is left out.
 
+## Insight desk (Ruling, Krish, 2026-11-24)
+
+Krish ruled on 24 November 2026 that the insight desk is one ai-harness
+skill with a thin adapter in each growth engine, all five wired now, and no
+separate repository until its graduation trigger fires. The method lives in
+ai-harness (`insight-desk`, read live with `get_skill` once admitted; until
+then a local checkout's `candidates/insight-desk/`, and a failed read means no
+sheet). Full Time's adapter is `config/insight-desk.json`:
+
+- **Humour is unavailable.** No humour engine call; pundit voice stays with
+  full-time and the creative system.
+- **Divergent runs through the connector only**, in `growth-fulltime:ideas`.
+  This repository has no client, so a run without the connector records
+  `unavailable`, never `pass`.
+- **The first sheet is a measurement idea.** While NOW.md says U4 with no
+  reading, every idea on the sheet is a measurement idea.
+- **Sheets live in `local/insight/`**, never committed. `engine/insight_sheet.py`
+  checks one (the skill's `insight-sheet/1` rules plus this engine's).
+- **The hook is G1.** `python3 growth.py spec propose <spec> --expires-at <iso>
+  --insight <sheet>` checks the sheet against the adapter and NOW.md and names
+  its lead in the plan's why and evidence. The spec, its digest and Krish's
+  Clear are unchanged, and a measurement lead needs the spec to name
+  `attributed_new_completers`. Without `--insight`, propose is as before. The
+  signed week then reaches `crew/take_writer`.
+- **Held means local.** While the engine is held, no ask reaches his list.
+  Approving an idea is plan approval only; it writes ideas, never copy, and
+  never posts, sends, schedules or spends.
+
 ## Read before a job
 
 1. Run `python3 growth.py sync` first; read this file and the newest-dated
