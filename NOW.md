@@ -2,7 +2,7 @@
 repo: krishanraja/growth-fulltime
 product: Full Time growth engine
 as_of: 2026-11-24
-head: 07ff575
+head: cc7e4ab
 lifecycle: building
 production_url: none
 state_doc: README.md
@@ -28,6 +28,7 @@ Football fans who become Full Time's returning listeners. It proves Mindmake can
 
 Lifecycle: building, and held. Krish held the engine on 29 October 2026 (Ruling, Krish, 2026-10-29: Not ready means a held activation state): Control Center's registry says held and so does the tracked `activation.json`. Control Center has not woken it since. On 14 November a hand-started run of the loop proved the held path live: Control Center accepted it as `held`, at 1.20.0, with no proposals and one NOT_READY hold, carrying the engine's priorities, obsessions and next steps. No workspace run has ever reached Control Center: its 13 reports are 12 dispatches from 19 to 29 October and that run. So Control Center shows this file's "Where it is right now" and "What is next" as the engine's state of play.
 
+- Closeout notes fold again after every merge: the fold moved from check.yml into closeout-fold.yml, which runs on a push to main, after each Auto-merge run and by hand, so notes merged with the Actions token no longer pile up as they did from 14 to 24 Nov (2026-11-24). (2026-11-24)
 - The insight desk is wired into Full Time (Ruling, Krish, 2026-11-24). `config/insight-desk.json` is the adapter (humour unavailable, divergent through the connector only in growth-fulltime:ideas, the first sheet a measurement idea while U4 is unmeasured); `engine/insight_sheet.py` checks a sheet; `python3 growth.py spec propose --insight <sheet>` names the sheet's lead on the G1 plan without changing the spec or its digest. Without the flag nothing changes, proved byte for byte against the previous commit's output (tests/golden/). With INSIGHT_DESK_SKILL set, methods are checked against the skill's list. The skill is still a candidate in ai-harness, so get_skill does not serve it yet. (2026-11-24)
 - Engine v2, approved on 27 October, is on main (Ruling, Krish, 2026-11-15: Full Time v2 lands on main keeping main's Control Center report). The signed spec, the matchday pack, Google Analytics through Control Center, the Audience Builder, the social kit lock, the crew of eleven and the 27 October rulings now sit beside main's report design: held mode, the NOT_READY hold, engine state at 1.20.0, credits, AI answers and the wake suffix. Folded into that report: the North Star and Google Analytics readings, Krish's actions (only when not held) and the weekly library reconcile as activity lines, LIBRARY as a hold when not held, Google Analytics rows kept out of the completers objective, the ORGANIC exception and the three pushed platforms in the holds, the 1.x refusal, the amended_sha256 check, approved go-lives kept as his instructions, and his answers settled against the queued G1 and G2. The engine stays held; nothing was sent, posted or spent. (2026-11-15)
 - paid ads are gated, not banned (Ruling, Krish, 2026-11-15): a paid draft waits on D5, D7, RELEASE and the rail, and D5 is an ask once the engine is released. From the Claude Ads review (docs/CLAUDE-ADS.md), `growth.py links audit` checks read-only that tracked links keep their tags when they land, and `growth.py learning plan|cost` says how long a test needs and what each counted event cost. Its first live run found every show link's share card is the site card. (2026-11-15) (2026-11-15)
@@ -35,7 +36,6 @@ Lifecycle: building, and held. Krish held the engine on 29 October 2026 (Ruling,
 - the branch sweep takes an approved list (branch@sha) on a hand run and deletes each named branch only at that exact commit, skipping and logging anything else; the weekly run is unchanged. Copied from ai-harness's canonical script and workflow. (2026-11-15)
 - our own pull requests (Krish or the Actions bot, branch in this repository, ready, at the commit that passed) now merge themselves when every "check" run on that commit is green (.github/workflows/auto-merge.yml, rule .github/scripts/auto-merge-pick.jq, tested). Forks, drafts and strangers wait for a person. (2026-11-14)
 - docs/control-center/ is Control Center's protocol bundle 1.33.0, byte for byte (bundle_sha256 4b7175a8aebbb8979eaefbeea1b7f0f44f2cffa0bbba9cea341da784fe7fde4d), the last protocol version of 14 November. (2026-11-14)
-- docs/control-center/ is Control Center's protocol bundle 1.28.0, byte for byte (bundle_sha256 b0dfa0d7aaa10aea0de45fb5f7dcc241c62bef70766f0fed9c6351d69af1b791), with bundle.json and a hash test that fails an edit in place (integration plan I-11). (2026-11-14)
 
 ## What changed recently
 
@@ -59,7 +59,7 @@ Lifecycle: building, and held. Krish held the engine on 29 October 2026 (Ruling,
 
 ## What is next and what is waiting on Krish
 
-- Next (2026-11-24): once Krish admits the skill, run the first Full Time sheet in a session with the connector: one measurement idea for attributed_new_completers, kept in local/insight/ while the engine is held.
+- Next (2026-11-24): After the next merged pull request, confirm a closeout-fold run folded its note into NOW.md on main.
 - Waiting on Krish (2026-11-12): the release decision and D1, each recorded in full-time's decision log, and a full listen to Liverpool v8 (HANDOVER-2026-10-27-CREATIVES.md).
 - North Star check (2026-11-24): holds.
 

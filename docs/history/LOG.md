@@ -9,6 +9,14 @@ hand. Nothing in this file describes current behaviour; `NOW.md` and `README.md`
 
 Moved verbatim from `NOW.md` (closeout fold, to keep NOW.md inside the audit's limits).
 
+From "Where it is right now":
+
+- docs/control-center/ is Control Center's protocol bundle 1.28.0, byte for byte (bundle_sha256 b0dfa0d7aaa10aea0de45fb5f7dcc241c62bef70766f0fed9c6351d69af1b791), with bundle.json and a hash test that fails an edit in place (integration plan I-11). (2026-11-14)
+
+## 2026-11-24
+
+Moved verbatim from `NOW.md` (closeout fold, to keep NOW.md inside the audit's limits).
+
 From "What changed recently":
 
 - 2026-10-23 **The North Star now has a number, a weekly ladder and an urgency rating.** Ruling (Krish, 2026-10-23): every repository chases one aggressive number on a weekly ladder, and urgency U1 to U5 sets how hard it pushes. The number is in `docs/NORTH_STAR.md`; contract: ai-harness `contract/north-star-metric.md`.
