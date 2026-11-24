@@ -175,6 +175,23 @@ sheet). Full Time's adapter is `config/insight-desk.json`:
   Approving an idea is plan approval only; it writes ideas, never copy, and
   never posts, sends, schedules or spends.
 
+## Revenue desk (Ruling, Krish, 2026-11-24)
+
+Krish ruled on 24 November 2026 to build the revenue desk as recommended:
+one ai-harness method (`revenue-desk`, read with `get_skill` once admitted;
+until then a local checkout's `skills/revenue-desk/`), run by
+krishanraja/strategist, with a thin adapter here, `config/revenue-desk.json`.
+
+- **Measure first.** No step here is counted and Full Time has no paid step,
+  so the desk runs no money path rule, reach check or test card. Its one
+  output is the reading plan for `attributed_new_completers` (MEASUREMENT.md,
+  "The North Star number"): the export full-time owes, how it is imported and
+  where it is scored.
+- **Bands are assumptions**, unset until two counted weeks, and bind only
+  after Krish's yes. `spend_authority` is none.
+- **Held means local**, as for the insight desk. `tests/test_revenue_desk.py`
+  and the self-test check that the adapter parses and its sources exist.
+
 ## Read before a job
 
 1. Run `python3 growth.py sync` first; read this file and the newest-dated
