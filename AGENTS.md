@@ -166,6 +166,11 @@ sheet). Full Time's adapter is `config/insight-desk.json`:
   Clear are unchanged, and a measurement lead needs the spec to name
   `attributed_new_completers`. Without `--insight`, propose is as before. The
   signed week then reaches `crew/take_writer`.
+- **Methods are checked against the skill only when it is at hand.** Set
+  `INSIGHT_DESK_SKILL` to a checkout of the skill and the hook checks each
+  idea's method against its `references/methods-by-category.md`; unset, a
+  method is checked for its shape only, and the output says
+  `methods_checked: false`. This repository keeps no copy of the list.
 - **Held means local.** While the engine is held, no ask reaches his list.
   Approving an idea is plan approval only; it writes ideas, never copy, and
   never posts, sends, schedules or spends.

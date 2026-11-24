@@ -6,8 +6,9 @@ words, and in `rulings.json` with the full-time decision-log heading that
 records it.
 
 - 2026-11-24: the insight desk is wired.
-  Krish ruled that the insight desk is one ai-harness skill with a thin adapter in each growth engine,
-  all five wired now, and no separate repository until its graduation trigger fires.
+  Ruling (Krish, 2026-11-24): the insight desk is the ai-harness insight-desk skill with a thin adapter
+  in each growth engine, all five wired now; no separate repository until the graduation trigger fires.
+  His own typed words are not copied into this public file; the ruling line above is its record.
   Full Time's adapter is `config/insight-desk.json` (humour unavailable, divergent through the connector
   only, the first sheet a measurement idea while U4 is unmeasured). `engine/insight_sheet.py` checks a
   sheet, and `spec propose --insight <sheet>` names its lead on the G1 plan without changing the spec or

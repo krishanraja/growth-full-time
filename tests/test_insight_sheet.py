@@ -10,6 +10,7 @@ import shutil
 import tempfile
 import types
 import unittest
+from unittest import mock
 
 import growth
 from engine import cli, insight_sheet, spec
@@ -17,7 +18,24 @@ from engine import cli, insight_sheet, spec
 ROOT = Path(growth.HERE)
 EXAMPLE = ROOT / 'specs' / 'examples' / 'synthetic-week.json'
 U4 = {'urgency': 4, 'current': None}
-SKILL = Path(os.environ.get('INSIGHT_DESK_SKILL', '/home/user/ai-harness/candidates/insight-desk'))
+GOLDEN = ROOT / 'tests' / 'golden' / 'propose-without-insight.json'   # made by the commit before the hook
+# A local checkout of the skill, only from the environment; without it the two tests that read the
+# skill's own files skip, and the synthetic methods tests below still run everywhere.
+SKILL = Path(os.environ['INSIGHT_DESK_SKILL']) if os.environ.get('INSIGHT_DESK_SKILL') else None
+NO_SKILL = 'set INSIGHT_DESK_SKILL to a checkout of ai-harness candidates/insight-desk to run this'
+
+
+def _skill_has(relative):
+    return SKILL is not None and (SKILL / relative).exists()
+
+
+def synthetic_skill(folder, methods=('instrument-first', 'one-variable-test')):
+    """A stand-in skill folder with only a methods-by-category.md, so method checks run in CI."""
+    refs = Path(folder) / 'references'
+    refs.mkdir(parents=True, exist_ok=True)
+    text = '# Methods (synthetic)\n\n## Measurement\n\n' + ''.join(f'### `{m}`\n\nSynthetic.\n\n' for m in methods)
+    (refs / 'methods-by-category.md').write_text(text, encoding='utf-8')
+    return str(folder)
 
 
 def _test(reason, **extra):
@@ -143,15 +161,30 @@ class Sheet(unittest.TestCase):
     def test_no_readable_now_md_stops_at_the_gate(self):
         self.assertTrue(any('north-star-state' in e for e in insight_sheet.engine_errors(sheet(), state=None)))
 
-    @unittest.skipUnless((SKILL / 'references' / 'methods-by-category.md').exists(), 'no local ai-harness checkout')
+    def test_methods_are_checked_against_a_methods_list(self):
+        with tempfile.TemporaryDirectory() as folder:
+            methods = insight_sheet.methods_from(synthetic_skill(folder))
+        self.assertEqual(methods, {'instrument-first', 'one-variable-test'})
+        self.assertEqual(insight_sheet.validate(sheet(), state=U4, methods=methods), [])
+        value = sheet(ideas=[idea('named-sender', method='made-up-method'), idea('first-listen-join')])
+        self.assertTrue(any('made-up-method' in e for e in insight_sheet.validate(value, state=U4, methods=methods)))
+
+    def test_skill_methods_reads_only_the_environment(self):
+        self.assertIsNone(insight_sheet.skill_methods({}))
+        with tempfile.TemporaryDirectory() as folder:
+            with self.assertRaisesRegex(ValueError, 'methods-by-category.md'):
+                insight_sheet.skill_methods({'INSIGHT_DESK_SKILL': folder})
+            self.assertEqual(insight_sheet.skill_methods({'INSIGHT_DESK_SKILL': synthetic_skill(folder)}),
+                             {'instrument-first', 'one-variable-test'})
+
+    @unittest.skipUnless(_skill_has('references/methods-by-category.md'), NO_SKILL)
     def test_methods_are_checked_against_the_skill_when_a_checkout_is_at_hand(self):
         methods = insight_sheet.methods_from(SKILL)
         self.assertEqual(insight_sheet.validate(sheet(), state=U4, methods=methods), [])
         value = sheet(ideas=[idea('named-sender', method='made-up-method'), idea('first-listen-join')])
         self.assertTrue(any('made-up-method' in e for e in insight_sheet.validate(value, state=U4, methods=methods)))
 
-    @unittest.skipUnless((SKILL / 'scripts' / 'tests' / 'fixtures' / 'sample-sheet.json').exists(),
-                         'no local ai-harness checkout')
+    @unittest.skipUnless(_skill_has('scripts/tests/fixtures/sample-sheet.json'), NO_SKILL)
     def test_the_skills_own_sample_sheet_passes_the_skill_rules_here(self):
         sample = insight_sheet.load_json(SKILL / 'scripts' / 'tests' / 'fixtures' / 'sample-sheet.json')
         self.assertEqual(insight_sheet.skill_errors(sample, insight_sheet.methods_from(SKILL)), [])
@@ -185,7 +218,8 @@ class Seed(unittest.TestCase):
         self.assertEqual((seeded['stage'], seeded['wall']), ('plan', 'strategy'))
         self.assertIn('named-sender', seeded['why'])
         self.assertEqual(len(seeded['evidence']), len(plain['evidence']) + 1)
-        self.assertEqual(plain, spec.proposal(value, '2026-11-30T08:00:00+00:00', insight=None))
+        before = json.loads(GOLDEN.read_text(encoding='utf-8'))['proposal']
+        self.assertEqual(plain, before)      # the plan without a sheet is the one the previous commit made
 
 
 class Hook(unittest.TestCase):
@@ -200,7 +234,7 @@ class Hook(unittest.TestCase):
         path.write_text(json.dumps(value), encoding='utf-8')
         return str(path)
 
-    def run_cli(self, *argv):
+    def run_raw(self, *argv):
         out, err = io.StringIO(), io.StringIO()
         code = 0
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
@@ -208,12 +242,15 @@ class Hook(unittest.TestCase):
                 cli.main(list(argv), self.growth)
             except SystemExit as stop:
                 code = stop.code
-        text = out.getvalue()
+        return code, out.getvalue(), err.getvalue()
+
+    def run_cli(self, *argv):
+        code, text, err = self.run_raw(*argv)
         try:
             body = json.loads(text)
         except ValueError:
             body = text
-        return code, body, err.getvalue()
+        return code, body, err
 
     def propose(self, path, *extra):
         return self.run_cli('spec', 'propose', path, '--expires-at', '2026-11-30T08:00:00+00:00', *extra)
@@ -223,24 +260,59 @@ class Hook(unittest.TestCase):
         value['objectives'].append({'key': 'attributed_new_completers', 'target': 30})
         return self.write('spec.json', value)
 
-    def test_without_insight_the_output_is_unchanged(self):
+    def test_without_insight_the_output_is_byte_identical_to_before(self):
         path = self.campaign()
-        code, body, _ = self.propose(path)
+        with mock.patch.dict(os.environ, {'INSIGHT_DESK_SKILL': str(self.tmp / 'nowhere')}):
+            code, text, _ = self.run_raw('spec', 'propose', path, '--expires-at', '2026-11-30T08:00:00+00:00')
         self.assertEqual(code, 0)
-        self.assertEqual(set(body), {'prepared', 'sent', 'proposal'})
-        self.assertNotIn('Seeded by insight sheet', body['proposal']['why'])
+        self.assertEqual(text, GOLDEN.read_text(encoding='utf-8'))
+
+    def test_with_insight_the_lead_seeds_the_plan(self):
+        path = self.campaign()
+        with mock.patch.object(insight_sheet, 'now_state', return_value=U4), \
+                mock.patch.dict(os.environ, {}, clear=False) as env:
+            env.pop('INSIGHT_DESK_SKILL', None)
+            code, body, _ = self.propose(path, '--insight', self.write('sheet.json', sheet()))
+        self.assertEqual(code, 0)
+        self.assertIs(body['sent'], False)
+        self.assertIs(body['methods_checked'], False)
+        self.assertEqual(body['insight']['lead'], 'named-sender')
+        self.assertIn('Seeded by insight sheet', body['proposal']['why'])
+        before = json.loads(GOLDEN.read_text(encoding='utf-8'))['proposal']
+        self.assertEqual(body['proposal']['payload_sha256'], before['payload_sha256'])
+
+    def test_with_insight_and_the_skill_a_made_up_method_is_refused(self):
+        path = self.campaign()
+        skill = synthetic_skill(self.tmp / 'skill')
+        made_up = sheet(ideas=[idea('named-sender', method='made-up-method'), idea('first-listen-join')])
+        with mock.patch.object(insight_sheet, 'now_state', return_value=U4), \
+                mock.patch.dict(os.environ, {'INSIGHT_DESK_SKILL': skill}):
+            code, _, err = self.propose(path, '--insight', self.write('made-up.json', made_up))
+            self.assertEqual(code, 1)
+            self.assertIn('made-up-method', err)
+            code, body, _ = self.propose(path, '--insight', self.write('sheet.json', sheet()))
+        self.assertEqual(code, 0)
+        self.assertIs(body['methods_checked'], True)
 
     def test_with_insight_the_live_now_md_decides(self):
         state = insight_sheet.now_state(ROOT)
         path = self.campaign()
-        value = sheet(north_star={'metric': 'attributed_new_completers', 'urgency': state['urgency'],
+        if state is None:
+            code, _, err = self.propose(path, '--insight', self.write('sheet.json', sheet()))
+            self.assertEqual(code, 1)
+            self.assertIn('north-star-state', err)
+            return
+        matching = sheet(north_star={'metric': 'attributed_new_completers', 'urgency': state['urgency'],
+                                     'current': state['current'], 'as_of': None})
+        code, body, err = self.propose(path, '--insight', self.write('sheet.json', matching))
+        self.assertEqual(code, 0, err)
+        self.assertIn('Seeded by insight sheet', body['proposal']['why'])
+        other = 3 if state['urgency'] != 3 else 2
+        stale = sheet(north_star={'metric': 'attributed_new_completers', 'urgency': other,
                                   'current': state['current'], 'as_of': None})
-        if state['urgency'] == 4 and state['current'] is None:
-            code, body, _ = self.propose(path, '--insight', self.write('sheet.json', value))
-            self.assertEqual(code, 0)
-            self.assertIs(body['sent'], False)
-            self.assertEqual(body['insight']['lead'], 'named-sender')
-            self.assertIn('Seeded by insight sheet', body['proposal']['why'])
+        code, _, err = self.propose(path, '--insight', self.write('stale.json', stale))
+        self.assertEqual(code, 1)
+        self.assertIn(f'NOW.md says U{state["urgency"]}', err)
         bad = sheet(venture='heartside', repo='krishanraja/growth-heartside')
         code, _, err = self.propose(path, '--insight', self.write('bad.json', bad))
         self.assertEqual(code, 1)

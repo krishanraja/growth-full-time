@@ -16,11 +16,13 @@ Full Time's rules on top of the skill's:
 import datetime as dt
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 
 HERE = Path(__file__).resolve().parent.parent
 ADAPTER = HERE / 'config' / 'insight-desk.json'
+SKILL_ENV = 'INSIGHT_DESK_SKILL'   # a local checkout of the skill, for the methods list
 SCHEMA = 'insight-sheet/1'
 
 TOP_KEYS = ('schema', 'venture', 'repo', 'harness_skill_sha', 'made_at', 'north_star', 'stall_check',
@@ -95,6 +97,19 @@ def methods_from(skill_dir):
     """The method slugs the skill's references/methods-by-category.md names, when a checkout is at hand."""
     text = (Path(skill_dir) / 'references' / 'methods-by-category.md').read_text(encoding='utf-8')
     return set(re.findall(r'(?m)^### `([a-z0-9-]+)`', text))
+
+
+def skill_methods(environ=None):
+    """The skill's method slugs when INSIGHT_DESK_SKILL names a local checkout of the skill, else None.
+    None means a method is checked only for its shape, and the caller says so. A path that is set
+    but has no methods-by-category.md is refused, never quietly skipped."""
+    path = (os.environ if environ is None else environ).get(SKILL_ENV)
+    if not path:
+        return None
+    found = Path(path) / 'references' / 'methods-by-category.md'
+    if not found.is_file():
+        raise ValueError(f'{SKILL_ENV} is {path}, which has no references/methods-by-category.md')
+    return methods_from(path)
 
 
 def now_state(root=HERE):

@@ -146,13 +146,16 @@ def _run_v2(args, growth):
             raise ValueError('the spec is refused: ' + '; '.join(learned))
         if getattr(args, 'insight', None):              # the insight desk's hook; absent, nothing changes
             from . import insight_sheet
-            seeded = insight_sheet.seed(data, insight_sheet.load_json(args.insight), root=growth.HERE)
+            methods = insight_sheet.skill_methods()      # INSIGHT_DESK_SKILL set: methods checked against the skill
+            seeded = insight_sheet.seed(data, insight_sheet.load_json(args.insight), methods=methods,
+                                        root=growth.HERE)
             proposal = spec.proposal(data, args.expires_at, insight=seeded)
+            checked = {'methods_checked': methods is not None}
             if args.queue:
                 from . import gates
-                return {'prepared': True, 'sent': False, 'insight': seeded,
+                return {'prepared': True, 'sent': False, 'insight': seeded, **checked,
                         **gates.prepare(growth.LOCAL, 'g1', proposal)}
-            return {'prepared': True, 'sent': False, 'insight': seeded, 'proposal': proposal}
+            return {'prepared': True, 'sent': False, 'insight': seeded, **checked, 'proposal': proposal}
         proposal = spec.proposal(data, args.expires_at)
         if args.queue:
             from . import gates

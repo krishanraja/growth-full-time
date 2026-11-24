@@ -40,7 +40,8 @@
   "hook": {
     "command": "python3 growth.py spec propose <spec> --expires-at <iso> --insight <sheet>",
     "feeds": ["engine/spec.py, the weekly objective", "crew/take_writer"],
-    "default": "Without --insight, spec propose is unchanged."
+    "default": "Without --insight, spec propose is unchanged.",
+    "methods": "INSIGHT_DESK_SKILL, a local checkout of the skill, makes the hook check each method against its methods-by-category.md; unset, methods are checked for shape only and the output says methods_checked false."
   },
   "approval_path": "G1, the weekly spec, as stage plan behind strategy. While the engine is held (activation.json or Control Center), no ask reaches his list and the sheet stays local."
 }
