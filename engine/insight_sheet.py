@@ -8,7 +8,7 @@ is never committed: sheets live in local/insight/.
 
 Full Time's rules on top of the skill's:
   - venture and repository are this engine's;
-  - no humour engine consult (the adapter says humour is unavailable);
+  - a humour engine consult only when the adapter allows it (engine/humour.py, Control Center's route);
   - the sheet's North Star urgency and reading agree with NOW.md, and while NOW.md says U4
     with no current reading, every idea is a measurement idea;
   - a seeded week names the objective its lead measures.
@@ -72,13 +72,14 @@ def adapter_errors(adapter):
         out.append('config/insight-desk.json: skill.name must be insight-desk')
     if adapter['venture'] != 'fulltime' or adapter['repo'] != 'krishanraja/growth-fulltime':
         out.append('config/insight-desk.json: venture and repo must be this engine (fulltime, krishanraja/growth-fulltime)')
-    if (adapter.get('humour') or {}).get('allowed') is not False:
-        out.append('config/insight-desk.json: humour is unavailable for Full Time; allowed must be false')
+    humour = adapter.get('humour') or {}
+    if humour.get('allowed') is not True or humour.get('route') != 'control-center':
+        out.append('config/insight-desk.json: humour runs through Control Center\'s humour route (engine/humour.py)')
     divergent = adapter.get('divergent') or {}
-    if divergent.get('route') != 'connector' or divergent.get('namespace') != 'growth-fulltime:ideas':
-        out.append('config/insight-desk.json: divergent runs through the connector in growth-fulltime:ideas only')
-    if divergent.get('scheduled_run') != 'unavailable':
-        out.append('config/insight-desk.json: a scheduled run has no divergent client, so it records unavailable')
+    if divergent.get('route') != 'control-center' or divergent.get('namespace') != 'growth-fulltime:ideas':
+        out.append('config/insight-desk.json: divergent runs through Control Center in growth-fulltime:ideas')
+    if divergent.get('scheduled_run') != 'score-and-record':
+        out.append('config/insight-desk.json: a scheduled run only scores and records (no model call)')
     if (adapter.get('first_sheet') or {}).get('idea_level') != 'measurement':
         out.append('config/insight-desk.json: the first sheet is a measurement idea while the number is unmeasured')
     if not str(adapter.get('sheets') or '').startswith('local/'):
