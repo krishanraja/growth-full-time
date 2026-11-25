@@ -1,6 +1,6 @@
 {
   "canon": {
-    "AGENTS.md": "1b7cdc83f4f9b91a",
+    "AGENTS.md": "e45b54bdbafb9013",
     "NOW.md": "f743f608b29ea17d",
     "docs/00-product.md": "46beed6b2c22ed7a",
     "docs/01-brand.md": "f35e85845d0cfe4c",
@@ -16,8 +16,16 @@
   "canon_added": [],
   "canon_from_index": true,
   "canon_removed": [],
-  "changed_since_last_sync": [],
-  "commits": [],
+  "changed_since_last_sync": [
+    "AGENTS.md"
+  ],
+  "commits": [
+    {
+      "date": "2026-11-25T03:46:00Z",
+      "sha": "3480ffc689",
+      "subject": "docs(canon): sync the canon block to v2026.11.24.7 (#121)"
+    }
+  ],
   "decisions": [
     "2026-10-26 - Solo analysis first; paid conversation after quality and adoption",
     "2026-10-16 - A pilot beta for fans, a December target, one feedback inbox",
@@ -49,10 +57,10 @@
   "notes": [],
   "open_pulls": [
     {
-      "branch": "steward/2026-11-20",
-      "number": 117,
-      "title": "docs(steward): 2026-11-20 needs review",
-      "updated": "2026-11-20T01:55:20Z"
+      "branch": "steward/2026-11-25",
+      "number": 122,
+      "title": "docs(steward): 2026-11-25 needs review",
+      "updated": "2026-11-25T03:46:09Z"
     }
   ],
   "previous_sha": "3f8b4d35cba05746f12db7a61a1248a9fc459ece",
@@ -180,6 +188,6 @@
       "status": "pending"
     }
   },
-  "sha": "3f8b4d35cba05746f12db7a61a1248a9fc459ece",
-  "synced_at": "2026-11-24T21:20:40+00:00"
+  "sha": "3480ffc689c4833e1580940e40d74a0e8d3cb9ff",
+  "synced_at": "2026-11-25T04:19:56+00:00"
 }
