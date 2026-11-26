@@ -376,7 +376,7 @@ the fold is the repository's own (engine/closeout.py). Control Center shows
 NOW.md's "Where it is right now" and "What is next" as this engine's state of
 play, so a stale NOW.md is a stale dashboard.
 
-<!-- krish-canon:start release=v2026.11.24.7 sha=e225a9a95adc rendered=2026-11-25 -->
+<!-- krish-canon:start release=v2026.11.25.2 sha=263292dbfd85 rendered=2026-11-26 -->
 ## Krish canon
 
 Rendered from `krishanraja/ai-harness`; the start marker names the last release that changed this block, not the latest release. Nothing inside these
@@ -430,7 +430,7 @@ in the harness. What he works on is live, never copied here; read it from Contro
 https://controlcenter.krishraja.com/api/canon/KRISH.md (and `PORTFOLIO.md` beside it).
 
 **Where the rest lives.** The operating contract, the routing contract and the
-34 curated skills are in `krishanraja/ai-harness`. On a machine with the harness installed the same skills are under the user skills root, and the local copy is
+35 curated skills are in `krishanraja/ai-harness`. On a machine with the harness installed the same skills are under the user skills root, and the local copy is
 authoritative for reading; the repository is authoritative for what is correct. Where none is installed (claude.ai, a cloud session), read each skill live with Control Center `get_skill`.
 
 **This repository's own rules:** `AGENTS.md`, `PLAYBOOK.md`
