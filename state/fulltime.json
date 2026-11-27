@@ -1,7 +1,7 @@
 {
   "canon": {
     "AGENTS.md": "9d4d3a39d0a5fbeb",
-    "NOW.md": "b10201398abb3b3c",
+    "NOW.md": "0a648fb79a96c5b9",
     "docs/00-product.md": "46beed6b2c22ed7a",
     "docs/01-brand.md": "f35e85845d0cfe4c",
     "docs/07-marketing.md": "e5e183e7188600fe",
@@ -17,19 +17,13 @@
   "canon_from_index": true,
   "canon_removed": [],
   "changed_since_last_sync": [
-    "AGENTS.md",
     "NOW.md"
   ],
   "commits": [
     {
-      "date": "2026-11-26T03:06:04Z",
-      "sha": "785515a40d",
-      "subject": "docs(canon): sync the canon block to v2026.11.25.2 (#123)"
-    },
-    {
-      "date": "2026-11-26T02:55:11Z",
-      "sha": "fe30ba466c",
-      "subject": "docs(steward): 2026-11-26 re-stamp NOW.md, roll three old bullets, record key note"
+      "date": "2026-11-27T02:57:52Z",
+      "sha": "50457f331e",
+      "subject": "docs(steward): 2026-11-27 re-stamp NOW.md head, roll the 2026-10-27 bullet"
     }
   ],
   "decisions": [
@@ -62,7 +56,7 @@
   ],
   "notes": [],
   "open_pulls": [],
-  "previous_sha": "3480ffc689c4833e1580940e40d74a0e8d3cb9ff",
+  "previous_sha": "785515a40d6968202144a28961b2500f579bdb2c",
   "push": {
     "open": false,
     "why": "no match has 4 of 6 AI Pundits (newest: 1 of 6)"
@@ -187,6 +181,6 @@
       "status": "pending"
     }
   },
-  "sha": "785515a40d6968202144a28961b2500f579bdb2c",
-  "synced_at": "2026-11-26T08:32:08+00:00"
+  "sha": "50457f331e6235ca6b953595f985eefc11fd44d9",
+  "synced_at": "2026-11-27T10:58:30+00:00"
 }
