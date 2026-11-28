@@ -1,7 +1,7 @@
 {
   "canon": {
     "AGENTS.md": "9d4d3a39d0a5fbeb",
-    "NOW.md": "0a648fb79a96c5b9",
+    "NOW.md": "2c1c81ba858f7151",
     "docs/00-product.md": "46beed6b2c22ed7a",
     "docs/01-brand.md": "f35e85845d0cfe4c",
     "docs/07-marketing.md": "e5e183e7188600fe",
@@ -21,9 +21,9 @@
   ],
   "commits": [
     {
-      "date": "2026-11-27T02:57:52Z",
-      "sha": "50457f331e",
-      "subject": "docs(steward): 2026-11-27 re-stamp NOW.md head, roll the 2026-10-27 bullet"
+      "date": "2026-11-28T02:48:06Z",
+      "sha": "624b355f9f",
+      "subject": "docs(steward): 2026-11-28 re-stamp NOW.md, date the open ask"
     }
   ],
   "decisions": [
@@ -56,7 +56,7 @@
   ],
   "notes": [],
   "open_pulls": [],
-  "previous_sha": "785515a40d6968202144a28961b2500f579bdb2c",
+  "previous_sha": "50457f331e6235ca6b953595f985eefc11fd44d9",
   "push": {
     "open": false,
     "why": "no match has 4 of 6 AI Pundits (newest: 1 of 6)"
@@ -181,6 +181,6 @@
       "status": "pending"
     }
   },
-  "sha": "50457f331e6235ca6b953595f985eefc11fd44d9",
-  "synced_at": "2026-11-27T10:58:30+00:00"
+  "sha": "624b355f9ff5d9e61d1233908537e8fad84c323f",
+  "synced_at": "2026-11-28T11:57:12+00:00"
 }
